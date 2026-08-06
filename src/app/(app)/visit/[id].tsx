@@ -186,7 +186,7 @@ export default function VisitDetail() {
                 label={inside && action.next === 'en_sitio' ? 'Confirmar arribo' : action.label}
                 iconRight={action.next === 'en_sitio' ? 'pin' : 'check'}
                 loading={marking}
-                onPress={onAdvance}
+                onPress={action.next === 'finalizada' ? () => router.push({ pathname: '/checklist/[id]', params: { id: id! } }) : onAdvance}
               />
             ) : (
               <View style={{ height: 56, borderRadius: 16, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
