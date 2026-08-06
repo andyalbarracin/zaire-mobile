@@ -3,36 +3,36 @@
 @tailwind utilities;
 
 /*
- * Variables de tema Zaire Mobile. Los colores semánticos remapean por esquema
- * (claro/oscuro). Valores tomados del prototipo (ZaireMobile.dc.html → themeVars).
- * Los canales RGB van separados por espacio para permitir utilidades de opacidad.
+ * Variables de tema Zaire Mobile (v2, navy-forward). Deben coincidir con src/theme/tokens.ts.
+ * Canales RGB separados por espacio para permitir utilidades de opacidad. El dark bg se
+ * mantiene en el negro neutro (#0A0D0F), no el navy de la paleta.
  */
 @layer base {
   :root {
-    --color-bg: 246 244 241; /* #F6F4F1 */
+    --color-bg: 245 241 234; /* #F5F1EA */
     --color-surface: 255 255 255; /* #FFFFFF */
-    --color-surface2: 236 234 228; /* #ECEAE4 */
-    --color-fg: 27 42 68; /* #1B2A44 */
+    --color-surface2: 239 234 224; /* #EFEAE0 */
+    --color-fg: 22 34 58; /* #16223A */
     --color-fg2: 90 100 116; /* #5A6474 */
-    --color-fg3: 154 161 173; /* #9AA1AD */
+    --color-fg3: 139 147 163; /* #8B93A3 */
     --color-nav: 255 255 255; /* #FFFFFF */
-    --line: rgba(27, 42, 68, 0.09);
-    --nav-line: rgba(27, 42, 68, 0.08);
-    --tile: rgba(226, 204, 156, 0.5);
+    --line: rgba(22, 34, 58, 0.1);
+    --nav-line: rgba(22, 34, 58, 0.08);
+    --tile: #e7e9ef;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --color-bg: 10 13 15; /* #0A0D0F */
-      --color-surface: 22 26 29; /* #161A1D */
-      --color-surface2: 32 38 42; /* #20262A */
-      --color-fg: 246 244 241; /* #F6F4F1 */
-      --color-fg2: 174 180 188; /* #AEB4BC */
-      --color-fg3: 124 131 139; /* #7C838B */
+      --color-bg: 10 13 15; /* #0A0D0F (negro neutro, se mantiene) */
+      --color-surface: 24 35 56; /* #182338 */
+      --color-surface2: 32 44 68; /* #202C44 */
+      --color-fg: 244 241 234; /* #F4F1EA */
+      --color-fg2: 174 182 196; /* #AEB6C4 */
+      --color-fg3: 114 124 142; /* #727C8E */
       --color-nav: 12 16 19; /* #0C1013 */
-      --line: rgba(246, 244, 241, 0.1);
-      --nav-line: rgba(246, 244, 241, 0.08);
-      --tile: rgba(226, 204, 156, 0.16);
+      --line: rgba(244, 241, 234, 0.1);
+      --nav-line: rgba(244, 241, 234, 0.08);
+      --tile: #212e48;
     }
   }
 }

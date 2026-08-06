@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { Icon, type IconName } from '@/components/icons/Icon';
-import { brand, fonts } from '@/theme/tokens';
+import { fonts } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 type Variant = 'orange' | 'outline' | 'danger';
@@ -34,9 +34,9 @@ export function PrimaryButton({
   const off = disabled || loading;
   const outline = variant === 'outline';
   const danger = variant === 'danger';
-  const solid = danger ? '#C43333' : brand.orange;
+  const solid = danger ? '#C43333' : c.primary;
   const bg = outline ? 'transparent' : off ? (danger ? '#D98B87' : '#F2A279') : solid;
-  const fg = outline ? c.fg : '#fff';
+  const fg = outline ? c.fg : danger ? '#fff' : c.onPrimary;
 
   return (
     <Pressable
