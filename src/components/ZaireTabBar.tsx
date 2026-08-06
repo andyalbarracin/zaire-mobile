@@ -33,7 +33,7 @@ interface TabItem {
 }
 
 const TAB_META: Record<string, { label: string; icon: IconName }> = {
-  index: { label: 'Jornada', icon: 'home' },
+  index: { label: 'Hoy', icon: 'home' },
   field: { label: 'Field', icon: 'layers' },
   assets: { label: 'Assets', icon: 'box' },
   stock: { label: 'Stock', icon: 'grid' },

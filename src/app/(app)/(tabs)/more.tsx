@@ -1,11 +1,13 @@
+import { useScrollToTop } from '@react-navigation/native';
 import { router, type Href } from 'expo-router';
 import { useColorScheme } from 'nativewind';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FolderSurface } from '@/components/FolderSurface';
 import { Icon, type IconName } from '@/components/icons/Icon';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth';
 import { useBootstrap } from '@/lib/bootstrap';
 import { isBiometricAvailable } from '@/lib/biometrics';
@@ -32,6 +34,8 @@ export default function More() {
   const { forceOffline, setForceOffline } = useConnectivity();
   const lock = useLock();
   const [bioAvail, setBioAvail] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   useEffect(() => {
     isBiometricAvailable().then(setBioAvail);
@@ -41,7 +45,7 @@ export default function More() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
         <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3, marginBottom: 18 }}>Más</Text>
 
         {/* Perfil (datos reales del bootstrap) */}
@@ -115,24 +119,7 @@ export default function More() {
         </View>
 
         {/* Cerrar sesión */}
-        <Pressable
-          onPress={() => signOut()}
-          style={({ pressed }) => ({
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 9,
-            height: 50,
-            borderRadius: 14,
-            borderWidth: 1,
-            borderColor: c.line,
-            backgroundColor: c.surface,
-            transform: [{ translateY: pressed ? 1 : 0 }],
-          })}
-        >
-          <Icon name="logout" size={18} color="#C43333" strokeWidth={2} />
-          <Text style={{ fontFamily: fonts.interSb, fontSize: 14, color: '#C43333' }}>Cerrar sesión</Text>
-        </Pressable>
+        <PrimaryButton variant="danger" label="Cerrar sesión" iconRight="logout" onPress={() => signOut()} />
       </ScrollView>
     </SafeAreaView>
   );

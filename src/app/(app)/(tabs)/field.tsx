@@ -1,3 +1,4 @@
+import { useScrollToTop } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -18,6 +19,8 @@ export default function Field() {
   const c = useThemeColors();
   const { visits, loading, error, stale, refetch } = useMyVisits();
   const [tab, setTab] = useState<'hoy' | 'todas'>('hoy');
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   const today = useMemo(() => visits.filter((v) => isToday(v.scheduled_at)), [visits]);
   const list = tab === 'hoy' ? today : visits;
@@ -33,7 +36,7 @@ export default function Field() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3 }}>Mis visitas</Text>
           <OfflinePill />

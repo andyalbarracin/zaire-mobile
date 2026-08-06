@@ -29,10 +29,6 @@ export function VisitMap({
         initialRegion={{ latitude, longitude, latitudeDelta: delta, longitudeDelta: delta }}
         showsUserLocation
         showsMyLocationButton={false}
-        scrollEnabled={false}
-        zoomEnabled={false}
-        rotateEnabled={false}
-        pitchEnabled={false}
       >
         <Circle
           center={{ latitude, longitude }}

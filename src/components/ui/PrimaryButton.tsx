@@ -5,7 +5,7 @@ import { Icon, type IconName } from '@/components/icons/Icon';
 import { brand, fonts } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
-type Variant = 'orange' | 'outline';
+type Variant = 'orange' | 'outline' | 'danger';
 
 /**
  * Botón primario del design system: **primario = naranja sólido** (visibilidad en el campo),
@@ -33,7 +33,9 @@ export function PrimaryButton({
   const [pressed, setPressed] = useState(false);
   const off = disabled || loading;
   const outline = variant === 'outline';
-  const bg = outline ? 'transparent' : off ? '#F2A279' : brand.orange;
+  const danger = variant === 'danger';
+  const solid = danger ? '#C43333' : brand.orange;
+  const bg = outline ? 'transparent' : off ? (danger ? '#D98B87' : '#F2A279') : solid;
   const fg = outline ? c.fg : '#fff';
 
   return (
@@ -54,7 +56,7 @@ export function PrimaryButton({
           borderColor: outline ? c.fg : 'transparent',
           opacity: off && !loading ? 0.55 : 1,
           transform: [{ translateY: pressed && !off ? 1 : 0 }],
-          shadowColor: '#F26A21',
+          shadowColor: danger ? '#C43333' : '#F26A21',
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: outline ? 0 : 0.3,
           shadowRadius: 10,

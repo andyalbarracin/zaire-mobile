@@ -81,7 +81,7 @@ export function LockOverlay() {
   return (
     <View style={StyleSheet.absoluteFill}>
       <BlurView intensity={38} tint={colorScheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,13,20,0.28)' }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(8,11,18,0.42)' }]} />
       <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 40 }]}>
         <View style={{ width: 88, height: 88, borderRadius: 26, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="shieldCheck" size={40} color="#fff" strokeWidth={2} />

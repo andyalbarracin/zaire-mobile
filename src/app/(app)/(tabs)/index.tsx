@@ -1,4 +1,6 @@
+import { useScrollToTop } from '@react-navigation/native';
 import { router } from 'expo-router';
+import { useRef } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,6 +10,7 @@ import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { OfflinePill } from '@/components/ui/OfflinePill';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { useBootstrap } from '@/lib/bootstrap';
+import { useConnectivity } from '@/lib/connectivity';
 import { isToday, visitToCard } from '@/lib/field/map';
 import type { FieldVisit } from '@/lib/field/types';
 import { useMyVisits } from '@/lib/field/useVisits';
@@ -51,6 +54,9 @@ export default function Home() {
   const c = useThemeColors();
   const { profile, role, companyName } = useBootstrap();
   const { visits } = useMyVisits();
+  const { isOnline } = useConnectivity();
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   const name = displayName(profile);
   const greeting = `¡${greetingWord()}${name ? `, ${name}` : ''}!`;
@@ -65,17 +71,14 @@ export default function Home() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <Pressable
-            onPress={() => router.navigate('/more')}
-            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 9, height: 42, paddingLeft: 8, paddingRight: 14, borderRadius: 21, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, opacity: pressed ? 0.85 : 1 })}
-          >
-            <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: brand.navy, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontFamily: fonts.ralewayB, fontSize: 13, color: '#F5F1EA' }}>{workspaceInitial(companyName)}</Text>
+          <Pressable onPress={() => router.navigate('/more')}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, paddingHorizontal: 13, borderRadius: 21, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }}>
+              <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: isOnline ? '#3EBE6A' : '#8B93A3' }} />
+              <Text numberOfLines={1} style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg, maxWidth: 165 }}>{companyName || 'Empresa Z'}</Text>
             </View>
-            <Text numberOfLines={1} style={{ fontFamily: fonts.interSb, fontSize: 13.5, color: c.fg, maxWidth: 150 }}>{companyName || 'Empresa Z'}</Text>
           </Pressable>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
             <OfflinePill />
