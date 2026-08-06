@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import { useColorScheme } from 'nativewind';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,7 +23,7 @@ import { useVisit } from '@/lib/field/useVisits';
 import { useSync } from '@/lib/sync/SyncProvider';
 import { useTenant } from '@/lib/tenant';
 import { tint } from '@/theme/color';
-import { brand, fonts, status as STATUS } from '@/theme/tokens';
+import { brand, fonts, status as STATUS, statusColorFor } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 const PURPOSE_LABELS: Record<VisitPurpose, string> = {
@@ -49,6 +50,7 @@ function hm(iso: string | null): string {
 
 export default function VisitDetail() {
   const c = useThemeColors();
+  const { colorScheme } = useColorScheme();
   const { supabase } = useTenant();
   const { isOnline } = useConnectivity();
   const sync = useSync();
@@ -81,6 +83,7 @@ export default function VisitDetail() {
   }, [id, isOnline, supabase]);
 
   const s = visit ? STATUS[STATUS_TO_KEY[visit.status]] : STATUS.none;
+  const sColor = visit ? statusColorFor(STATUS_TO_KEY[visit.status], colorScheme === 'dark') : STATUS.none.color;
   const site = visit?.site;
   const hasCoords = site?.latitude != null && site?.longitude != null;
   const radius = site?.geofence_radius_m ?? 150;
@@ -136,9 +139,9 @@ export default function VisitDetail() {
         <HeaderIconButton icon="chevronLeft" size={40} onPress={() => router.back()} />
         <Text style={{ fontFamily: fonts.ralewayB, fontSize: 17, color: c.fg }}>Detalle de visita</Text>
         {visit ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 11, borderRadius: 20, backgroundColor: tint(s.color, 0.13) }}>
-            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: s.color }} />
-            <Text style={{ fontFamily: fonts.interSb, fontSize: 11.5, color: s.color }}>{s.label}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 11, borderRadius: 20, backgroundColor: tint(sColor, 0.13) }}>
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: sColor }} />
+            <Text style={{ fontFamily: fonts.interSb, fontSize: 11.5, color: sColor }}>{s.label}</Text>
           </View>
         ) : (
           <View style={{ width: 40 }} />
@@ -163,8 +166,8 @@ export default function VisitDetail() {
             {/* Card empresa / sitio */}
             <FolderSurface radius={20} cut={24} fill={c.surface} border={c.line} style={{ marginBottom: 18 }} contentStyle={{ padding: 18 }}>
               <View style={{ flexDirection: 'row', gap: 13, alignItems: 'flex-start' }}>
-                <View style={{ width: 48, height: 48, borderRadius: 13, backgroundColor: tint(s.color, 0.13), alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon name="gauge" size={24} color={s.color} strokeWidth={2} />
+                <View style={{ width: 48, height: 48, borderRadius: 13, backgroundColor: tint(sColor, 0.13), alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name="gauge" size={24} color={sColor} strokeWidth={2} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontFamily: fonts.ralewayB, fontSize: 19, lineHeight: 24, color: c.fg }}>{visit.client?.business_name || 'Sin cliente'}</Text>
@@ -239,7 +242,7 @@ export default function VisitDetail() {
                 </>
               ) : (
                 <View style={{ height: 54, borderRadius: 16, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
-                  <Icon name="check" size={18} color={s.color} strokeWidth={2.4} />
+                  <Icon name="check" size={18} color={sColor} strokeWidth={2.4} />
                   <Text style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg2 }}>Visita {s.label.toLowerCase()}</Text>
                 </View>
               )}
@@ -276,12 +279,13 @@ function InfoRow({ icon, children, colors }: { icon: 'doc' | 'pin'; children: Re
 
 function Timeline({ visit }: { visit: FieldVisit }) {
   const c = useThemeColors();
+  const { colorScheme } = useColorScheme();
   const steps = [
     { at: visit.scheduled_at, label: 'Planificada', color: STATUS.planificada.color },
     { at: visit.started_at, label: 'En curso', color: STATUS.encurso.color },
     { at: visit.arrived_at, label: 'En sitio', color: STATUS.ensitio.color },
     { at: visit.departed_at, label: 'Salida', color: c.fg3 },
-    { at: visit.ended_at, label: 'Finalizada', color: STATUS.finalizada.color },
+    { at: visit.ended_at, label: 'Finalizada', color: statusColorFor('finalizada', colorScheme === 'dark') },
   ].filter((x) => x.at);
 
   if (steps.length === 0) {
