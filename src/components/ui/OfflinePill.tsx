@@ -1,11 +1,12 @@
-import { Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, Text } from 'react-native';
 
 import { Icon } from '@/components/icons/Icon';
 import { useConnectivity } from '@/lib/connectivity';
 import { useSync } from '@/lib/sync/SyncProvider';
 import { fonts } from '@/theme/tokens';
 
-/** Estado de conexión / sincronización: offline, sincronizando o cambios pendientes. */
+/** Estado de conexión / sync. Clickeable → Ajustes (Más), donde se togglea el modo offline. */
 export function OfflinePill() {
   const { isOnline } = useConnectivity();
   const { pending, syncing } = useSync();
@@ -17,9 +18,12 @@ export function OfflinePill() {
   if (!text) return null;
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 20, backgroundColor: 'rgba(224,160,58,0.15)' }}>
+    <Pressable
+      onPress={() => router.navigate('/more')}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 20, backgroundColor: 'rgba(224,160,58,0.15)', opacity: pressed ? 0.7 : 1 })}
+    >
       {!isOnline ? <Icon name="wifiOff" size={13} color="#B87A1E" strokeWidth={2.2} /> : null}
       <Text style={{ fontFamily: fonts.interB, fontSize: 11, color: '#B87A1E', letterSpacing: 0.3 }}>{text}</Text>
-    </View>
+    </Pressable>
   );
 }

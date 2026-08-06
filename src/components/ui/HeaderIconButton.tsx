@@ -8,10 +8,12 @@ export function HeaderIconButton({
   icon,
   onPress,
   size = 42,
+  iconSize = 20,
 }: {
   icon: IconName;
   onPress?: () => void;
   size?: number;
+  iconSize?: number;
 }) {
   const c = useThemeColors();
   return (
@@ -20,7 +22,7 @@ export function HeaderIconButton({
       style={({ pressed }) => ({
         width: size,
         height: size,
-        borderRadius: 12,
+        borderRadius: 13,
         borderWidth: 1,
         borderColor: c.line,
         backgroundColor: c.surface,
@@ -29,7 +31,7 @@ export function HeaderIconButton({
         opacity: pressed ? 0.85 : 1,
       })}
     >
-      <Icon name={icon} size={20} color={c.fg} strokeWidth={2.2} />
+      <Icon name={icon} size={iconSize} color={c.fg} strokeWidth={2.2} />
     </Pressable>
   );
 }

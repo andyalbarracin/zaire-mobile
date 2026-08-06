@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FolderCard } from '@/components/FolderCard';
@@ -29,13 +29,31 @@ const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const shortDate = (d: Date) => `${DIAS[d.getDay()]} · ${d.getDate()} ${MESES[d.getMonth()]}`;
 
+/** Saludo según el horario (convenciones AR). */
+function greetingWord(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Buen día';
+  if (h < 20) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+/** Nombre a mostrar: solo si el perfil tiene un nombre real (no el email). */
+function displayName(p: { full_name?: string | null; email?: string | null } | null): string {
+  const raw = (p?.full_name ?? '').trim();
+  if (!raw || raw.includes('@') || raw === p?.email) return '';
+  return raw.split(' ')[0];
+}
+function workspaceInitial(name: string): string {
+  const n = (name || '').trim();
+  return (n ? n[0] : 'Z').toUpperCase();
+}
+
 export default function Home() {
   const c = useThemeColors();
   const { profile, role, companyName } = useBootstrap();
   const { visits } = useMyVisits();
 
-  const firstName = (profile?.full_name ?? '').trim().split(' ')[0];
-  const greeting = `¡Buen día${firstName ? `, ${firstName}` : ''}!`;
+  const name = displayName(profile);
+  const greeting = `¡${greetingWord()}${name ? `, ${name}` : ''}!`;
 
   const today = visits.filter((v) => isToday(v.scheduled_at));
   const hasToday = today.length > 0;
@@ -50,12 +68,20 @@ export default function Home() {
       <ScrollView contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <HeaderIconButton icon="menu" onPress={() => router.navigate('/more')} />
+          <Pressable
+            onPress={() => router.navigate('/more')}
+            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 9, height: 42, paddingLeft: 8, paddingRight: 14, borderRadius: 21, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, opacity: pressed ? 0.85 : 1 })}
+          >
+            <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: brand.navy, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontFamily: fonts.ralewayB, fontSize: 13, color: '#F5F1EA' }}>{workspaceInitial(companyName)}</Text>
+            </View>
+            <Text numberOfLines={1} style={{ fontFamily: fonts.interSb, fontSize: 13.5, color: c.fg, maxWidth: 150 }}>{companyName || 'Empresa Z'}</Text>
+          </Pressable>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
             <OfflinePill />
             <View style={{ position: 'relative' }}>
-              <HeaderIconButton icon="bell" onPress={() => {}} />
-              <View style={{ position: 'absolute', top: 9, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: brand.orange, borderWidth: 2, borderColor: c.surface }} />
+              <HeaderIconButton icon="bell" size={46} iconSize={23} onPress={() => {}} />
+              <View style={{ position: 'absolute', top: 10, right: 11, width: 9, height: 9, borderRadius: 5, backgroundColor: brand.orange, borderWidth: 2, borderColor: c.surface }} />
             </View>
           </View>
         </View>
@@ -71,7 +97,8 @@ export default function Home() {
         </View>
 
         {/* Hero: progreso real del día */}
-        <FolderSurface radius={20} cut={24} gradient={c.hero} border={c.line} style={{ marginBottom: 26 }} contentStyle={{ paddingHorizontal: 19, paddingTop: 19, paddingBottom: 17 }}>
+        <Pressable onPress={() => router.navigate('/field')} style={{ marginBottom: 26 }}>
+        <FolderSurface radius={20} cut={24} gradient={c.hero} border={c.line} contentStyle={{ paddingHorizontal: 19, paddingTop: 19, paddingBottom: 17 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
             <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, letterSpacing: 0.2 }}>{hasToday ? 'Progreso diario' : 'Tus visitas'}</Text>
             <Text style={{ fontFamily: fonts.interM, fontSize: 11.5, color: c.fg3 }}>{shortDate(new Date())}</Text>
@@ -106,6 +133,7 @@ export default function Home() {
             ))}
           </View>
         </FolderSurface>
+        </Pressable>
 
         {/* Visitas de hoy (reales) */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 }}>

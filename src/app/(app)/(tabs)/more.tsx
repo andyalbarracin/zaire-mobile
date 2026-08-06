@@ -91,7 +91,19 @@ export default function More() {
             <Switch value={colorScheme === 'dark'} onValueChange={toggleColorScheme} trackColor={{ true: brand.orange, false: '#CBD0D8' }} />
           </PrefRow>
           <PrefRow icon="wifiOff" label="Modo offline" divider>
-            <Switch value={forceOffline} onValueChange={setForceOffline} trackColor={{ true: brand.orange, false: '#CBD0D8' }} />
+            <Switch
+              value={forceOffline}
+              onValueChange={(v) => {
+                setForceOffline(v);
+                Alert.alert(
+                  v ? 'Modo offline activado' : 'Volviste online',
+                  v
+                    ? 'Ahora trabajás sin conexión: los cambios se guardan en el teléfono y se sincronizan solos cuando recuperes la señal.'
+                    : 'Sincronizamos los cambios pendientes.',
+                );
+              }}
+              trackColor={{ true: brand.orange, false: '#CBD0D8' }}
+            />
           </PrefRow>
           {bioAvail ? (
             <PrefRow icon="shieldCheck" label="Bloqueo con biometría" divider>
