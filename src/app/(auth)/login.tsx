@@ -1,32 +1,35 @@
-import { useColorScheme } from 'nativewind';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import {
   Image,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Icon } from '@/components/icons/Icon';
+import { Icon, type IconName } from '@/components/icons/Icon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth';
-import { brand, fonts } from '@/theme/tokens';
-import { useThemeColors } from '@/theme/useThemeColors';
+import { fonts } from '@/theme/tokens';
 
-const isoNavy = require('../../../assets/brand/iso-navy.png');
-const isoWhite = require('../../../assets/brand/iso-white.png');
+const condorBg = require('../../../assets/brand/zaire-condor-login.png');
+const wordmarkWhite = require('../../../assets/brand/wordmark-white.png');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Longitud máx del código OTP (Supabase se configura entre 6 y 10; el proyecto DEV usa 8).
+const OTP_MAX = 8;
+const OTP_MIN = 6;
 
 export default function Login() {
-  const c = useThemeColors();
-  const { colorScheme } = useColorScheme();
-  const { sendOtp, verifyOtp } = useAuth();
+  const { sendOtp, verifyOtp, enableDevBypass } = useAuth();
 
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [email, setEmail] = useState('');
@@ -55,8 +58,8 @@ export default function Login() {
 
   async function onVerify() {
     setError(null);
-    if (code.trim().length < 6) {
-      setError('El código tiene 6 dígitos.');
+    if (code.trim().length < OTP_MIN) {
+      setError('Ingresá el código completo.');
       return;
     }
     setBusy(true);
@@ -67,149 +70,137 @@ export default function Login() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-bg">
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingTop: 16, paddingHorizontal: 26, paddingBottom: 26 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Image
-            source={colorScheme === 'dark' ? isoWhite : isoNavy}
-            style={{ height: 30, width: 96, resizeMode: 'contain', marginBottom: 26 }}
-          />
-          <Text style={{ fontFamily: fonts.ralewayB, fontSize: 28, color: c.fg, letterSpacing: -0.3 }}>
-            ¡Hola, bienvenido!
-          </Text>
-          <Text style={{ fontFamily: fonts.inter, fontSize: 15, lineHeight: 21, color: c.fg2, marginTop: 6, marginBottom: 30 }}>
-            {step === 'email'
-              ? 'Ingresá con tu email. Te enviamos un código de acceso, sin contraseña.'
-              : 'Revisá tu correo e ingresá el código de 6 dígitos.'}
-          </Text>
+    <ImageBackground source={condorBg} resizeMode="cover" style={styles.bg}>
+      <StatusBar style="light" />
+      <LinearGradient
+        colors={['rgba(11,16,32,0.30)', 'rgba(11,16,32,0.72)', 'rgba(11,16,32,0.95)']}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Logo centrado (lockup blanco sobre el fondo oscuro) */}
+            <View style={styles.logoArea}>
+              <Image source={wordmarkWhite} style={styles.logo} />
+            </View>
 
-          {step === 'email' ? (
-            <>
-              <FieldLabel color={c.fg}>Email</FieldLabel>
-              <InputRow
-                icon="mail"
-                colors={c}
-                placeholder="tu.email@empresa.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoFocus
-                onSubmitEditing={onSendCode}
-              />
-              <View style={{ height: 20 }} />
-              <PrimaryButton label="Enviar código" onPress={onSendCode} loading={busy} iconRight="arrowRight" />
-            </>
-          ) : (
-            <>
-              <FieldLabel color={c.fg}>Código</FieldLabel>
-              <InputRow
-                icon="shieldCheck"
-                colors={c}
-                placeholder="• • • • • •"
-                value={code}
-                onChangeText={(t) => setCode(t.replace(/[^0-9]/g, '').slice(0, 6))}
-                keyboardType="number-pad"
-                autoFocus
-                letterSpacing={6}
-                onSubmitEditing={onVerify}
-              />
-              <View style={{ height: 20 }} />
-              <PrimaryButton label="Ingresar" onPress={onVerify} loading={busy} />
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 18 }}>
-                <LinkText onPress={onSendCode} disabled={busy}>
-                  Reenviar código
-                </LinkText>
-                <LinkText
-                  onPress={() => {
-                    setStep('email');
-                    setCode('');
-                    setError(null);
-                    setInfo(null);
-                  }}
-                >
-                  Cambiar email
-                </LinkText>
-              </View>
-            </>
-          )}
+            {/* Formulario */}
+            <View>
+              <Text style={styles.title}>{step === 'email' ? 'Iniciá sesión' : 'Verificá tu código'}</Text>
+              <Text style={styles.subtitle}>
+                {step === 'email'
+                  ? 'Ingresá tu email y te enviamos un código de acceso. Sin contraseña.'
+                  : `Revisá tu correo e ingresá el código de ${OTP_MAX} dígitos.`}
+              </Text>
 
-          {error ? (
-            <Text style={{ fontFamily: fonts.interM, fontSize: 13, color: '#E03A3A', marginTop: 16 }}>{error}</Text>
-          ) : info ? (
-            <Text style={{ fontFamily: fonts.inter, fontSize: 13, color: c.fg2, marginTop: 16 }}>{info}</Text>
-          ) : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              {step === 'email' ? (
+                <>
+                  <GlassInput
+                    icon="mail"
+                    placeholder="tu.email@empresa.com"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    autoFocus
+                    onSubmitEditing={onSendCode}
+                    returnKeyType="send"
+                  />
+                  <View style={styles.gap} />
+                  <PrimaryButton label="Enviar código" onPress={onSendCode} loading={busy} iconRight="arrowRight" />
+                </>
+              ) : (
+                <>
+                  <GlassInput
+                    icon="shieldCheck"
+                    placeholder="Código de acceso"
+                    value={code}
+                    onChangeText={(t) => setCode(t.replace(/[^0-9]/g, '').slice(0, OTP_MAX))}
+                    keyboardType="number-pad"
+                    autoFocus
+                    letterSpacing={6}
+                    maxLength={OTP_MAX}
+                    onSubmitEditing={onVerify}
+                    returnKeyType="done"
+                  />
+                  <View style={styles.gap} />
+                  <PrimaryButton label="Ingresar" onPress={onVerify} loading={busy} />
+                  <View style={styles.secondaryRow}>
+                    <GhostButton label="Reenviar código" onPress={onSendCode} disabled={busy} />
+                    <GhostButton
+                      label="Cambiar email"
+                      onPress={() => {
+                        setStep('email');
+                        setCode('');
+                        setError(null);
+                        setInfo(null);
+                      }}
+                    />
+                  </View>
+                </>
+              )}
+
+              {error ? (
+                <Text style={styles.error}>{error}</Text>
+              ) : info ? (
+                <Text style={styles.info}>{info}</Text>
+              ) : null}
+
+              {__DEV__ && (
+                <View style={styles.devWrap}>
+                  <GhostButton label="Entrar sin login · modo dev" onPress={enableDevBypass} />
+                </View>
+              )}
+            </View>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.copyright}>© 2026 Zaire Technologies · Argentina</Text>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
-function FieldLabel({ children, color }: { children: string; color: string }) {
-  return <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color, marginBottom: 8 }}>{children}</Text>;
-}
-
-function InputRow({
+function GlassInput({
   icon,
-  colors,
   letterSpacing,
   ...props
 }: {
-  icon: 'mail' | 'shieldCheck';
-  colors: ReturnType<typeof useThemeColors>;
+  icon: IconName;
   letterSpacing?: number;
 } & React.ComponentProps<typeof TextInput>) {
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        height: 54,
-        borderRadius: 14,
-        backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.line,
-        paddingHorizontal: 15,
-      }}
-    >
-      <Icon name={icon} size={19} color={colors.fg3} strokeWidth={2} />
+    <View style={styles.input}>
+      <Icon name={icon} size={19} color="rgba(255,255,255,0.7)" strokeWidth={2} />
       <TextInput
-        placeholderTextColor={colors.fg3}
-        style={{
-          flex: 1,
-          fontFamily: fonts.interM,
-          fontSize: 15,
-          color: colors.fg,
-          letterSpacing,
-          paddingVertical: 0,
-        }}
+        placeholderTextColor="rgba(255,255,255,0.5)"
+        style={[styles.inputText, letterSpacing ? { letterSpacing } : null]}
         {...props}
       />
     </View>
   );
 }
 
-function LinkText({
-  children,
-  onPress,
-  disabled,
-}: {
-  children: string;
-  onPress?: () => void;
-  disabled?: boolean;
-}) {
+function GhostButton({ label, onPress, disabled }: { label: string; onPress?: () => void; disabled?: boolean }) {
   return (
-    <Pressable onPress={onPress} disabled={disabled} hitSlop={8}>
-      <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: disabled ? '#B9BDC4' : brand.orange }}>
-        {children}
-      </Text>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.ghost,
+        { backgroundColor: pressed ? 'rgba(255,255,255,0.10)' : 'transparent', opacity: disabled ? 0.5 : 1 },
+      ]}
+    >
+      <Text style={styles.ghostLabel}>{label}</Text>
     </Pressable>
   );
 }
@@ -217,7 +208,46 @@ function LinkText({
 function mapAuthError(msg: string): string {
   const m = msg.toLowerCase();
   if (m.includes('network') || m.includes('fetch')) return 'Sin conexión — revisá tu señal e intentá de nuevo.';
-  if (m.includes('invalid') || m.includes('expired') || m.includes('token')) return 'Código inválido o vencido — probá de nuevo.';
-  if (m.includes('rate') || m.includes('limit')) return 'Demasiados intentos. Esperá un momento.';
+  if (m.includes('invalid') || m.includes('expired') || m.includes('token')) return 'Código inválido o vencido — pedí uno nuevo.';
+  if (m.includes('rate') || m.includes('limit') || m.includes('too many')) return 'Muchos intentos seguidos. Esperá unos minutos (o usá el modo dev).';
   return msg;
 }
+
+const styles = StyleSheet.create({
+  bg: { flex: 1, backgroundColor: '#0B1020' },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1, paddingHorizontal: 26, paddingTop: 12, paddingBottom: 8 },
+  logoArea: { flex: 1, minHeight: 190, alignItems: 'center', justifyContent: 'center' },
+  logo: { width: 224, height: 82, resizeMode: 'contain' },
+  title: { fontFamily: fonts.ralewayB, fontSize: 27, color: '#fff', letterSpacing: -0.3, marginBottom: 6 },
+  subtitle: { fontFamily: fonts.inter, fontSize: 14.5, lineHeight: 21, color: 'rgba(255,255,255,0.72)', marginBottom: 22 },
+  input: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 16,
+  },
+  inputText: { flex: 1, fontFamily: fonts.interM, fontSize: 15.5, color: '#fff', paddingVertical: 0 },
+  gap: { height: 18 },
+  secondaryRow: { flexDirection: 'row', gap: 11, marginTop: 14 },
+  ghost: {
+    flex: 1,
+    height: 50,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.32)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ghostLabel: { fontFamily: fonts.interSb, fontSize: 13.5, color: '#fff' },
+  error: { fontFamily: fonts.interM, fontSize: 13, color: '#FF8A7A', marginTop: 16 },
+  info: { fontFamily: fonts.inter, fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 16 },
+  devWrap: { marginTop: 22, opacity: 0.9 },
+  footer: { alignItems: 'center', paddingTop: 18, paddingBottom: 4 },
+  copyright: { fontFamily: fonts.inter, fontSize: 12, color: 'rgba(255,255,255,0.5)' },
+});

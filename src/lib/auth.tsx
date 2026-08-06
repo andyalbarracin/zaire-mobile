@@ -6,11 +6,14 @@ import { useTenant } from '@/lib/tenant';
 interface AuthContextValue {
   session: Session | null;
   initializing: boolean;
-  /** Envía el código OTP de 6 dígitos al email (passwordless). */
+  /** Envía el código OTP al email (passwordless). */
   sendOtp: (email: string) => Promise<{ error: string | null }>;
   /** Verifica el código y crea la sesión. */
   verifyOtp: (email: string, token: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  /** Bypass SOLO para desarrollo: entra sin sesión real. Nunca disponible en producción. */
+  devBypass: boolean;
+  enableDevBypass: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -19,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { supabase } = useTenant();
   const [session, setSession] = useState<Session | null>(null);
   const [initializing, setInitializing] = useState(true);
+  const [devBypass, setDevBypass] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -51,11 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    setDevBypass(false);
     await supabase.auth.signOut();
   }
 
   return (
-    <AuthContext.Provider value={{ session, initializing, sendOtp, verifyOtp, signOut }}>
+    <AuthContext.Provider
+      value={{ session, initializing, sendOtp, verifyOtp, signOut, devBypass, enableDevBypass: () => setDevBypass(true) }}
+    >
       {children}
     </AuthContext.Provider>
   );

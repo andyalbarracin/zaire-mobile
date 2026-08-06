@@ -4,8 +4,8 @@ import { ZaireTabBar } from '@/components/ZaireTabBar';
 import { useAuth } from '@/lib/auth';
 
 export default function AppLayout() {
-  const { session } = useAuth();
-  if (!session) return <Redirect href="/(auth)/login" />;
+  const { session, devBypass } = useAuth();
+  if (!session && !devBypass) return <Redirect href="/(auth)/login" />;
 
   // La barra custom decide qué tabs mostrar (gateo por enabled_modules). Trace existe
   // como ruta pero no como tab (se llega desde "Más").
