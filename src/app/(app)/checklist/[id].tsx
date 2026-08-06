@@ -105,7 +105,7 @@ export default function Checklist() {
       </ScrollView>
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: insets.bottom + 12, backgroundColor: c.bg, borderTopWidth: 1, borderTopColor: c.line }}>
-        <PrimaryButton label="Finalizar visita" iconRight="check" loading={busy} onPress={onFinalize} />
+        <PrimaryButton variant="navy" label="Finalizar visita" iconRight="check" loading={busy} onPress={onFinalize} />
       </View>
     </SafeAreaView>
   );

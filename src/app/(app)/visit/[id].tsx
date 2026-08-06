@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DummyMap } from '@/components/field/DummyMap';
 import { VisitMap } from '@/components/field/VisitMap';
@@ -49,7 +49,6 @@ function hm(iso: string | null): string {
 
 export default function VisitDetail() {
   const c = useThemeColors();
-  const insets = useSafeAreaInsets();
   const { supabase } = useTenant();
   const { isOnline } = useConnectivity();
   const sync = useSync();
@@ -160,7 +159,7 @@ export default function VisitDetail() {
         </View>
       ) : (
         <>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
             {/* Card empresa / sitio */}
             <FolderSurface radius={20} cut={24} fill={c.surface} border={c.line} style={{ marginBottom: 18 }} contentStyle={{ padding: 18 }}>
               <View style={{ flexDirection: 'row', gap: 13, alignItems: 'flex-start' }}>
@@ -220,24 +219,32 @@ export default function VisitDetail() {
             {/* Actividad */}
             <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, marginTop: 18, marginBottom: 13 }}>Actividad</Text>
             <Timeline visit={visit} />
-          </ScrollView>
 
-          {/* CTA fija abajo */}
-          <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: insets.bottom + 12, backgroundColor: c.bg, borderTopWidth: 1, borderTopColor: c.line }}>
-            {action ? (
-              <PrimaryButton
-                label={inside && action.next === 'en_sitio' ? 'Confirmar arribo' : action.label}
-                iconRight={action.next === 'en_sitio' ? 'pin' : 'check'}
-                loading={marking}
-                onPress={action.next === 'finalizada' ? () => router.push({ pathname: '/checklist/[id]', params: { id: id! } }) : onAdvance}
-              />
-            ) : (
-              <View style={{ height: 56, borderRadius: 16, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
-                <Icon name="check" size={18} color={s.color} strokeWidth={2.4} />
-                <Text style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg2 }}>Visita {s.label.toLowerCase()}</Text>
-              </View>
-            )}
-          </View>
+            {/* Acción de la visita */}
+            <View style={{ marginTop: 28 }}>
+              {action ? (
+                <>
+                  <PrimaryButton
+                    label={inside && action.next === 'en_sitio' ? 'Confirmar arribo' : action.label}
+                    iconRight={action.next === 'en_sitio' ? 'pin' : 'check'}
+                    loading={marking}
+                    variant={action.next === 'finalizada' ? 'navy' : 'outline'}
+                    onPress={action.next === 'finalizada' ? () => router.push({ pathname: '/checklist/[id]', params: { id: id! } }) : onAdvance}
+                  />
+                  {action.next === 'en_sitio' ? (
+                    <Text style={{ fontFamily: fonts.inter, fontSize: 12, color: c.fg3, textAlign: 'center', marginTop: 9 }}>
+                      Acción temporal · más adelante lo hará la geocerca automáticamente.
+                    </Text>
+                  ) : null}
+                </>
+              ) : (
+                <View style={{ height: 54, borderRadius: 16, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
+                  <Icon name="check" size={18} color={s.color} strokeWidth={2.4} />
+                  <Text style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg2 }}>Visita {s.label.toLowerCase()}</Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
         </>
       )}
     </SafeAreaView>
