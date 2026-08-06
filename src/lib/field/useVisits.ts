@@ -16,7 +16,7 @@ import type { FieldVisit } from './types';
 export function useMyVisits() {
   const { supabase } = useTenant();
   const { session } = useAuth();
-  const { isOnline } = useConnectivity();
+  const { forceOffline } = useConnectivity();
   const [visits, setVisits] = useState<FieldVisit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +38,8 @@ export function useMyVisits() {
       setVisits(cached);
       setLoading(false);
     }
-    // 2) offline → nos quedamos con lo guardado
-    if (!isOnline) {
+    // 2) solo si el usuario forzó modo offline nos quedamos con lo guardado; si no, siempre intentamos red
+    if (forceOffline) {
       setStale(!!cached);
       setLoading(false);
       return;
@@ -56,7 +56,7 @@ export function useMyVisits() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, userId, isOnline]);
+  }, [supabase, userId, forceOffline]);
 
   useEffect(() => {
     load();
@@ -67,7 +67,7 @@ export function useMyVisits() {
 
 export function useVisit(id: string | undefined) {
   const { supabase } = useTenant();
-  const { isOnline } = useConnectivity();
+  const { forceOffline } = useConnectivity();
   const [visit, setVisit] = useState<FieldVisit | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +85,7 @@ export function useVisit(id: string | undefined) {
       setVisit(cached);
       setLoading(false);
     }
-    if (!isOnline) {
+    if (forceOffline) {
       setStale(!!cached);
       setLoading(false);
       return;
@@ -101,7 +101,7 @@ export function useVisit(id: string | undefined) {
     } finally {
       setLoading(false);
     }
-  }, [supabase, id, isOnline]);
+  }, [supabase, id, forceOffline]);
 
   useEffect(() => {
     load();

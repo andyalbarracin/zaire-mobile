@@ -15,9 +15,8 @@ export function ConnectivityProvider({ children }: { children: ReactNode }) {
   const net = Network.useNetworkState();
   const [forceOffline, setForceOffline] = useState(false);
 
-  // Asumimos online hasta que el SO diga lo contrario (isInternetReachable puede ser null al inicio).
-  const networkOnline = (net?.isConnected ?? true) && (net?.isInternetReachable ?? true);
-  const isOnline = !forceOffline && networkOnline;
+  // isInternetReachable es poco confiable (puede dar false con conexión OK); nos guiamos por isConnected.
+  const isOnline = !forceOffline && net?.isConnected !== false;
 
   return <Ctx.Provider value={{ isOnline, forceOffline, setForceOffline }}>{children}</Ctx.Provider>;
 }
