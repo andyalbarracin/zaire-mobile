@@ -14,9 +14,10 @@ import { writeCache } from '@/lib/cache';
 import { useConnectivity } from '@/lib/connectivity';
 import { distanceMeters, formatDistance } from '@/lib/field/geo';
 import { STATUS_TO_KEY } from '@/lib/field/map';
-import { markArrival } from '@/lib/field/mutations';
-import type { FieldVisit, VisitPurpose } from '@/lib/field/types';
+import { changeStatus } from '@/lib/field/mutations';
+import type { FieldVisit, VisitPurpose, VisitStatus } from '@/lib/field/types';
 import { useVisit } from '@/lib/field/useVisits';
+import { useSync } from '@/lib/sync/SyncProvider';
 import { useTenant } from '@/lib/tenant';
 import { tint } from '@/theme/color';
 import { brand, fonts, status as STATUS } from '@/theme/tokens';
@@ -31,6 +32,13 @@ const PURPOSE_LABELS: Record<VisitPurpose, string> = {
   otro: 'Otro',
 };
 
+// Siguiente acción según el estado actual (transiciones soportadas en esta slice).
+const NEXT_ACTION: Partial<Record<VisitStatus, { label: string; next: VisitStatus }>> = {
+  planificada: { label: 'Marcar en sitio', next: 'en_sitio' },
+  en_curso: { label: 'Marcar en sitio', next: 'en_sitio' },
+  en_sitio: { label: 'Finalizar visita', next: 'finalizada' },
+};
+
 function hm(iso: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
@@ -42,6 +50,7 @@ export default function VisitDetail() {
   const insets = useSafeAreaInsets();
   const { supabase } = useTenant();
   const { isOnline } = useConnectivity();
+  const sync = useSync();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { visit, loading, error, setVisit } = useVisit(id);
 
@@ -70,22 +79,20 @@ export default function VisitDetail() {
   const radius = site?.geofence_radius_m ?? 150;
   const dist = userLoc && hasCoords ? distanceMeters(userLoc.lat, userLoc.lng, site!.latitude!, site!.longitude!) : null;
   const inside = dist != null && dist <= radius;
-  const canMark = visit?.status === 'planificada' || visit?.status === 'en_curso';
+  const action = visit ? NEXT_ACTION[visit.status] : undefined;
 
-  async function onMarkArrival() {
-    if (!id || !visit) return;
-    if (!isOnline) {
-      Alert.alert('Sin conexión', 'Necesitás conexión para confirmar el arribo. El registro offline llega en la próxima slice.');
-      return;
-    }
+  async function onAdvance() {
+    if (!id || !visit || !action) return;
     setMarking(true);
     try {
-      const now = await markArrival(supabase, id);
-      const updated: FieldVisit = { ...visit, status: 'en_sitio', arrived_at: now };
+      const patch = await changeStatus(supabase, isOnline, visit, action.next);
+      const updated = { ...visit, ...patch } as FieldVisit;
       setVisit(updated);
       void writeCache(`visit:${id}`, updated);
+      sync.refresh();
+      if (!isOnline) Alert.alert('Guardado sin conexión', 'Se sincroniza solo cuando vuelva la señal.');
     } catch {
-      Alert.alert('Error', 'No pudimos registrar el arribo. Probá de nuevo.');
+      Alert.alert('Error', 'No pudimos guardar el cambio. Probá de nuevo.');
     } finally {
       setMarking(false);
     }
@@ -174,12 +181,12 @@ export default function VisitDetail() {
 
           {/* CTA fija abajo */}
           <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: insets.bottom + 12, backgroundColor: c.bg, borderTopWidth: 1, borderTopColor: c.line }}>
-            {canMark ? (
+            {action ? (
               <PrimaryButton
-                label={inside ? 'Confirmar arribo' : 'Marcar en sitio'}
-                iconRight="pin"
+                label={inside && action.next === 'en_sitio' ? 'Confirmar arribo' : action.label}
+                iconRight={action.next === 'en_sitio' ? 'pin' : 'check'}
                 loading={marking}
-                onPress={onMarkArrival}
+                onPress={onAdvance}
               />
             ) : (
               <View style={{ height: 56, borderRadius: 16, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>

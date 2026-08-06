@@ -1,10 +1,6 @@
 import { getDb } from '@/lib/db';
 
-/**
- * Cola de salida (sync_outbox) — andamiaje. Cuando lleguen las mutaciones offline
- * (cambio de estado de visita, reporte, etc. en slices siguientes), se encolan acá y
- * se suben cuando vuelve la conexión. En esta slice NO se usa todavía.
- */
+/** Cola de salida (sync_outbox): mutaciones hechas offline, para subir al reconectar. */
 export interface OutboxItem {
   id: number;
   entity: string;
@@ -26,4 +22,13 @@ export async function enqueue(entity: string, op: string, payload: unknown): Pro
 
 export async function getPending(): Promise<OutboxItem[]> {
   return getDb().getAllAsync<OutboxItem>("SELECT * FROM sync_outbox WHERE status = 'pending' ORDER BY created_at ASC");
+}
+
+export async function markDone(id: number): Promise<void> {
+  await getDb().runAsync('DELETE FROM sync_outbox WHERE id = ?', id);
+}
+
+export async function countPending(): Promise<number> {
+  const r = await getDb().getFirstAsync<{ n: number }>("SELECT COUNT(*) AS n FROM sync_outbox WHERE status = 'pending'");
+  return r?.n ?? 0;
 }

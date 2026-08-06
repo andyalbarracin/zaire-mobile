@@ -23,6 +23,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { BootstrapProvider } from '@/lib/bootstrap';
 import { ConnectivityProvider } from '@/lib/connectivity';
+import { SyncProvider } from '@/lib/sync/SyncProvider';
 import { TenantProvider } from '@/lib/tenant';
 
 SplashScreen.preventAutoHideAsync();
@@ -58,8 +59,10 @@ export default function RootLayout() {
           <TenantProvider>
             <AuthProvider>
               <BootstrapProvider>
-                <StatusBar style="auto" />
-                <RootNav fontsLoaded={fontsLoaded} />
+                <SyncProvider>
+                  <StatusBar style="auto" />
+                  <RootNav fontsLoaded={fontsLoaded} />
+                </SyncProvider>
               </BootstrapProvider>
             </AuthProvider>
           </TenantProvider>
