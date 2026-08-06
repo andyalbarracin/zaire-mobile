@@ -1,22 +1,25 @@
 import { useScrollToTop } from '@react-navigation/native';
 import { router } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FieldMap } from '@/components/field/FieldMap';
 import { FolderCard } from '@/components/FolderCard';
 import { folderPath } from '@/components/folderShape';
 import { Icon } from '@/components/icons/Icon';
 import { OfflinePill } from '@/components/ui/OfflinePill';
-import { isToday, visitToCard } from '@/lib/field/map';
+import { isToday, STATUS_TO_KEY, visitToCard } from '@/lib/field/map';
 import type { FieldVisit } from '@/lib/field/types';
 import { useMyVisits } from '@/lib/field/useVisits';
-import { fonts } from '@/theme/tokens';
+import { fonts, statusColorFor } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 export default function Field() {
   const c = useThemeColors();
+  const { colorScheme } = useColorScheme();
   const { visits, loading, error, stale, refetch } = useMyVisits();
   const [tab, setTab] = useState<'hoy' | 'todas'>('hoy');
   const scrollRef = useRef<ScrollView>(null);
@@ -24,6 +27,15 @@ export default function Field() {
 
   const today = useMemo(() => visits.filter((v) => isToday(v.scheduled_at)), [visits]);
   const list = tab === 'hoy' ? today : visits;
+
+  const isDark = colorScheme === 'dark';
+  const points = useMemo(
+    () =>
+      list
+        .filter((v) => v.site?.latitude != null && v.site?.longitude != null)
+        .map((v) => ({ id: v.id, lat: v.site!.latitude!, lng: v.site!.longitude!, color: statusColorFor(STATUS_TO_KEY[v.status], isDark) })),
+    [list, isDark],
+  );
 
   // Si no hay visitas hoy pero sí hay asignadas, mostramos "Todas" automáticamente (una vez).
   const autoSwitched = useRef(false);
@@ -58,11 +70,14 @@ export default function Field() {
         ) : list.length === 0 ? (
           <EmptyState today={tab === 'hoy'} />
         ) : (
-          <View style={{ gap: 12 }}>
-            {list.map((v) => (
-              <FolderCard key={v.id} {...visitToCard(v)} onPress={() => openVisit(v)} />
-            ))}
-          </View>
+          <>
+            {points.length > 0 ? <FieldMap points={points} /> : null}
+            <View style={{ gap: 12 }}>
+              {list.map((v) => (
+                <FolderCard key={v.id} {...visitToCard(v)} onPress={() => openVisit(v)} />
+              ))}
+            </View>
+          </>
         )}
       </ScrollView>
     </SafeAreaView>

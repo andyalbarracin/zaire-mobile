@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Image,
   ImageBackground,
@@ -38,6 +39,13 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  // Recordamos el último email usado para pre-cargarlo (menos fricción al reingresar).
+  useEffect(() => {
+    SecureStore.getItemAsync('zaire_last_email').then((v) => {
+      if (v) setEmail(v);
+    });
+  }, []);
+
   async function onSendCode() {
     setError(null);
     setInfo(null);
@@ -66,7 +74,11 @@ export default function Login() {
     const { error: err } = await verifyOtp(email, code);
     setBusy(false);
     // Si sale bien, onAuthStateChange crea la sesión y el guard redirige solo.
-    if (err) setError(mapAuthError(err));
+    if (err) {
+      setError(mapAuthError(err));
+      return;
+    }
+    void SecureStore.setItemAsync('zaire_last_email', email.trim());
   }
 
   return (
