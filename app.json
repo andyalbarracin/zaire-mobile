@@ -40,6 +40,12 @@
         {
           "locationWhenInUsePermission": "Zaire Mobile usa tu ubicación para registrar tu arribo a los sitios de trabajo."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Zaire Mobile usa la cámara para tomar fotos de la visita."
+        }
       ]
     ],
     "experiments": {

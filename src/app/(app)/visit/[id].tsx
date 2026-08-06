@@ -1,7 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DummyMap } from '@/components/field/DummyMap';
@@ -15,6 +16,7 @@ import { useConnectivity } from '@/lib/connectivity';
 import { distanceMeters, formatDistance } from '@/lib/field/geo';
 import { STATUS_TO_KEY } from '@/lib/field/map';
 import { changeStatus } from '@/lib/field/mutations';
+import { getPhotos, uploadPhoto, type VisitPhoto } from '@/lib/field/photos';
 import type { FieldVisit, VisitPurpose, VisitStatus } from '@/lib/field/types';
 import { useVisit } from '@/lib/field/useVisits';
 import { useSync } from '@/lib/sync/SyncProvider';
@@ -57,6 +59,8 @@ export default function VisitDetail() {
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [perm, setPerm] = useState<Location.PermissionStatus | null>(null);
   const [marking, setMarking] = useState(false);
+  const [photos, setPhotos] = useState<VisitPhoto[]>([]);
+  const [addingPhoto, setAddingPhoto] = useState(false);
 
   // Ubicación en vivo (foreground). El arribo automático con app cerrada (background) es dev build.
   useEffect(() => {
@@ -72,6 +76,10 @@ export default function VisitDetail() {
     })();
     return () => sub?.remove();
   }, []);
+
+  useEffect(() => {
+    if (id && isOnline) getPhotos(supabase, id).then(setPhotos).catch(() => {});
+  }, [id, isOnline, supabase]);
 
   const s = visit ? STATUS[STATUS_TO_KEY[visit.status]] : STATUS.none;
   const site = visit?.site;
@@ -95,6 +103,30 @@ export default function VisitDetail() {
       Alert.alert('Error', 'No pudimos guardar el cambio. Probá de nuevo.');
     } finally {
       setMarking(false);
+    }
+  }
+
+  async function onAddPhoto() {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Permiso', 'Necesitamos la cámara para tomar la foto.');
+      return;
+    }
+    if (!isOnline) {
+      Alert.alert('Sin conexión', 'Las fotos necesitan conexión por ahora.');
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({ base64: true, quality: 0.6 });
+    const b64 = res.assets?.[0]?.base64;
+    if (res.canceled || !b64 || !id) return;
+    setAddingPhoto(true);
+    try {
+      const p = await uploadPhoto(supabase, id, b64);
+      setPhotos((prev) => [p, ...prev]);
+    } catch {
+      Alert.alert('Error', 'No pudimos subir la foto.');
+    } finally {
+      setAddingPhoto(false);
     }
   }
 
@@ -173,6 +205,17 @@ export default function VisitDetail() {
                 <GeoNote color={c.fg2} icon="pin">Estás a {formatDistance(dist)} del sitio.</GeoNote>
               )}
             </View>
+
+            {/* Fotos */}
+            <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, marginTop: 18, marginBottom: 12 }}>Fotos</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+              <Pressable onPress={onAddPhoto} style={{ width: 84, height: 84, borderRadius: 14, borderWidth: 2, borderColor: c.line, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', backgroundColor: c.surface }}>
+                {addingPhoto ? <ActivityIndicator color={brand.orange} /> : <Icon name="camera" size={26} color={c.fg3} strokeWidth={2} />}
+              </Pressable>
+              {photos.map((p) => (
+                <Image key={p.id} source={{ uri: p.url }} style={{ width: 84, height: 84, borderRadius: 14, backgroundColor: c.surface2 }} />
+              ))}
+            </ScrollView>
 
             {/* Actividad */}
             <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, marginTop: 18, marginBottom: 13 }}>Actividad</Text>
