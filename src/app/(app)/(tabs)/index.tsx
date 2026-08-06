@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FolderCard } from '@/components/FolderCard';
 import { FolderSurface } from '@/components/FolderSurface';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
+import { OfflinePill } from '@/components/ui/OfflinePill';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { useBootstrap } from '@/lib/bootstrap';
 import { isToday, visitToCard } from '@/lib/field/map';
@@ -50,9 +51,12 @@ export default function Home() {
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <HeaderIconButton icon="menu" onPress={() => router.navigate('/more')} />
-          <View style={{ position: 'relative' }}>
-            <HeaderIconButton icon="bell" onPress={() => {}} />
-            <View style={{ position: 'absolute', top: 9, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: brand.orange, borderWidth: 2, borderColor: c.surface }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
+            <OfflinePill />
+            <View style={{ position: 'relative' }}>
+              <HeaderIconButton icon="bell" onPress={() => {}} />
+              <View style={{ position: 'absolute', top: 9, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: brand.orange, borderWidth: 2, borderColor: c.surface }} />
+            </View>
           </View>
         </View>
 

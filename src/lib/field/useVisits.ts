@@ -1,18 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/lib/auth';
+import { readCache, writeCache } from '@/lib/cache';
+import { useConnectivity } from '@/lib/connectivity';
 import { useTenant } from '@/lib/tenant';
 
 import { getMyVisits, getVisit } from './api';
 import type { FieldVisit } from './types';
 
-/** Carga las visitas del técnico logueado. Sin sesión (bypass dev) devuelve lista vacía. */
+/**
+ * Visitas del técnico logueado con caché read-through:
+ * muestra lo guardado al instante, refresca de red cuando hay conexión, y si no hay red
+ * (o modo offline) se queda con lo cacheado (`stale = true`).
+ */
 export function useMyVisits() {
   const { supabase } = useTenant();
   const { session } = useAuth();
+  const { isOnline } = useConnectivity();
   const [visits, setVisits] = useState<FieldVisit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
   const userId = session?.user?.id;
 
   const load = useCallback(async () => {
@@ -21,29 +29,49 @@ export function useMyVisits() {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    const key = `visits:${userId}`;
     setError(null);
+
+    // 1) caché instantáneo
+    const cached = await readCache<FieldVisit[]>(key);
+    if (cached) {
+      setVisits(cached);
+      setLoading(false);
+    }
+    // 2) offline → nos quedamos con lo guardado
+    if (!isOnline) {
+      setStale(!!cached);
+      setLoading(false);
+      return;
+    }
+    // 3) refrescar de red
     try {
-      setVisits(await getMyVisits(supabase, userId));
+      const fresh = await getMyVisits(supabase, userId);
+      setVisits(fresh);
+      setStale(false);
+      void writeCache(key, fresh);
     } catch {
-      setError('No se pudieron cargar las visitas.');
+      setStale(!!cached);
+      if (!cached) setError('No se pudieron cargar las visitas.');
     } finally {
       setLoading(false);
     }
-  }, [supabase, userId]);
+  }, [supabase, userId, isOnline]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  return { visits, loading, error, refetch: load };
+  return { visits, loading, error, stale, refetch: load };
 }
 
 export function useVisit(id: string | undefined) {
   const { supabase } = useTenant();
+  const { isOnline } = useConnectivity();
   const [visit, setVisit] = useState<FieldVisit | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -51,22 +79,42 @@ export function useVisit(id: string | undefined) {
       setLoading(false);
       return;
     }
-    setLoading(true);
-    setError(null);
-    getVisit(supabase, id)
-      .then((v) => {
-        if (mounted) setVisit(v);
-      })
-      .catch(() => {
-        if (mounted) setError('No se pudo cargar la visita.');
-      })
-      .finally(() => {
+    const key = `visit:${id}`;
+
+    (async () => {
+      const cached = await readCache<FieldVisit>(key);
+      if (cached && mounted) {
+        setVisit(cached);
+        setLoading(false);
+      }
+      if (!isOnline) {
+        if (mounted) {
+          setStale(!!cached);
+          setLoading(false);
+        }
+        return;
+      }
+      try {
+        const fresh = await getVisit(supabase, id);
+        if (mounted) {
+          setVisit(fresh);
+          setStale(false);
+        }
+        if (fresh) void writeCache(key, fresh);
+      } catch {
+        if (mounted) {
+          setStale(!!cached);
+          if (!cached) setError('No se pudo cargar la visita.');
+        }
+      } finally {
         if (mounted) setLoading(false);
-      });
+      }
+    })();
+
     return () => {
       mounted = false;
     };
-  }, [supabase, id]);
+  }, [supabase, id, isOnline]);
 
-  return { visit, loading, error };
+  return { visit, loading, error, stale };
 }

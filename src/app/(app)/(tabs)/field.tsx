@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FolderCard } from '@/components/FolderCard';
 import { folderPath } from '@/components/folderShape';
 import { Icon } from '@/components/icons/Icon';
+import { OfflinePill } from '@/components/ui/OfflinePill';
 import { isToday, visitToCard } from '@/lib/field/map';
 import type { FieldVisit } from '@/lib/field/types';
 import { useMyVisits } from '@/lib/field/useVisits';
@@ -15,7 +16,7 @@ import { useThemeColors } from '@/theme/useThemeColors';
 
 export default function Field() {
   const c = useThemeColors();
-  const { visits, loading, error, refetch } = useMyVisits();
+  const { visits, loading, error, stale, refetch } = useMyVisits();
   const [tab, setTab] = useState<'hoy' | 'todas'>('hoy');
 
   const today = useMemo(() => visits.filter((v) => isToday(v.scheduled_at)), [visits]);
@@ -33,7 +34,13 @@ export default function Field() {
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
       <ScrollView contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
-        <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3, marginBottom: 16 }}>Mis visitas</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3 }}>Mis visitas</Text>
+          <OfflinePill />
+        </View>
+        {stale ? (
+          <Text style={{ fontFamily: fonts.inter, fontSize: 12.5, color: c.fg3, marginBottom: 12 }}>Mostrando lo guardado · sin conexión</Text>
+        ) : null}
 
         {/* Tabs Hoy / Todas */}
         <View style={{ flexDirection: 'row', gap: 6, padding: 4, backgroundColor: c.surface2, borderRadius: 13, marginBottom: 16 }}>

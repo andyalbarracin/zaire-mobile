@@ -8,6 +8,7 @@ import { FolderSurface } from '@/components/FolderSurface';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { useAuth } from '@/lib/auth';
 import { useBootstrap } from '@/lib/bootstrap';
+import { useConnectivity } from '@/lib/connectivity';
 import { MODULE_META, type ModuleId } from '@/lib/modules';
 import { ROLE_LABELS } from '@/lib/types';
 import { brand, fonts } from '@/theme/tokens';
@@ -26,8 +27,8 @@ export default function More() {
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const { signOut } = useAuth();
   const { profile, role, companyName, modules } = useBootstrap();
-  const [offline, setOffline] = useState(false); // stub M0 (sin efecto)
-  const [textBig, setTextBig] = useState(false); // stub M0 (sin efecto)
+  const { forceOffline, setForceOffline } = useConnectivity();
+  const [textBig, setTextBig] = useState(false); // stub (sin efecto todavía)
 
   const name = profile?.full_name?.trim() || 'Usuario';
 
@@ -82,7 +83,7 @@ export default function More() {
             <Switch value={colorScheme === 'dark'} onValueChange={toggleColorScheme} trackColor={{ true: brand.orange, false: '#CBD0D8' }} />
           </PrefRow>
           <PrefRow icon="wifiOff" label="Modo offline" divider>
-            <Switch value={offline} onValueChange={setOffline} trackColor={{ true: brand.orange, false: '#CBD0D8' }} />
+            <Switch value={forceOffline} onValueChange={setForceOffline} trackColor={{ true: brand.orange, false: '#CBD0D8' }} />
           </PrefRow>
           <PrefRow icon="textSize" label="Tamaño de texto" divider>
             <View style={{ flexDirection: 'row', gap: 4, padding: 3, backgroundColor: c.surface2, borderRadius: 11 }}>

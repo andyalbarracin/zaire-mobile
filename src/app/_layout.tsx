@@ -22,6 +22,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { BootstrapProvider } from '@/lib/bootstrap';
+import { ConnectivityProvider } from '@/lib/connectivity';
 import { TenantProvider } from '@/lib/tenant';
 
 SplashScreen.preventAutoHideAsync();
@@ -53,14 +54,16 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <TenantProvider>
-          <AuthProvider>
-            <BootstrapProvider>
-              <StatusBar style="auto" />
-              <RootNav fontsLoaded={fontsLoaded} />
-            </BootstrapProvider>
-          </AuthProvider>
-        </TenantProvider>
+        <ConnectivityProvider>
+          <TenantProvider>
+            <AuthProvider>
+              <BootstrapProvider>
+                <StatusBar style="auto" />
+                <RootNav fontsLoaded={fontsLoaded} />
+              </BootstrapProvider>
+            </AuthProvider>
+          </TenantProvider>
+        </ConnectivityProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
