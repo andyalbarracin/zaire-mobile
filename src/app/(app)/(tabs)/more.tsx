@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { useColorScheme } from 'nativewind';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,7 +8,9 @@ import { FolderSurface } from '@/components/FolderSurface';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { useAuth } from '@/lib/auth';
 import { useBootstrap } from '@/lib/bootstrap';
+import { isBiometricAvailable } from '@/lib/biometrics';
 import { useConnectivity } from '@/lib/connectivity';
+import { useLock } from '@/lib/lock';
 import { MODULE_META, type ModuleId } from '@/lib/modules';
 import { ROLE_LABELS } from '@/lib/types';
 import { brand, fonts } from '@/theme/tokens';
@@ -28,7 +30,13 @@ export default function More() {
   const { signOut } = useAuth();
   const { profile, role, companyName, modules } = useBootstrap();
   const { forceOffline, setForceOffline } = useConnectivity();
+  const lock = useLock();
+  const [bioAvail, setBioAvail] = useState(false);
   const [textBig, setTextBig] = useState(false); // stub (sin efecto todavía)
+
+  useEffect(() => {
+    isBiometricAvailable().then(setBioAvail);
+  }, []);
 
   const name = profile?.full_name?.trim() || 'Usuario';
 
@@ -85,6 +93,11 @@ export default function More() {
           <PrefRow icon="wifiOff" label="Modo offline" divider>
             <Switch value={forceOffline} onValueChange={setForceOffline} trackColor={{ true: brand.orange, false: '#CBD0D8' }} />
           </PrefRow>
+          {bioAvail ? (
+            <PrefRow icon="shieldCheck" label="Bloqueo con biometría" divider>
+              <Switch value={lock.enabled} onValueChange={lock.setEnabled} trackColor={{ true: brand.orange, false: '#CBD0D8' }} />
+            </PrefRow>
+          ) : null}
           <PrefRow icon="textSize" label="Tamaño de texto" divider>
             <View style={{ flexDirection: 'row', gap: 4, padding: 3, backgroundColor: c.surface2, borderRadius: 11 }}>
               <SizePill active={!textBig} onPress={() => setTextBig(false)} size={12} colors={c} />

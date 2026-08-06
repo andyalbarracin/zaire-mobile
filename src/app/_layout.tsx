@@ -23,6 +23,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { BootstrapProvider } from '@/lib/bootstrap';
 import { ConnectivityProvider } from '@/lib/connectivity';
+import { LockOverlay, LockProvider } from '@/lib/lock';
 import { SyncProvider } from '@/lib/sync/SyncProvider';
 import { TenantProvider } from '@/lib/tenant';
 
@@ -37,7 +38,12 @@ function RootNav({ fontsLoaded }: { fontsLoaded: boolean }) {
   }, [ready]);
 
   if (!ready) return null;
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }} />
+      <LockOverlay />
+    </>
+  );
 }
 
 export default function RootLayout() {
@@ -60,8 +66,10 @@ export default function RootLayout() {
             <AuthProvider>
               <BootstrapProvider>
                 <SyncProvider>
-                  <StatusBar style="auto" />
-                  <RootNav fontsLoaded={fontsLoaded} />
+                  <LockProvider>
+                    <StatusBar style="auto" />
+                    <RootNav fontsLoaded={fontsLoaded} />
+                  </LockProvider>
                 </SyncProvider>
               </BootstrapProvider>
             </AuthProvider>

@@ -1,18 +1,29 @@
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
 
-/*
- * Andamiaje M0: expo-local-authentication queda instalado con este wrapper mínimo.
- * El desbloqueo real (huella/cara/PIN al abrir la app) se implementa en M1.
- * Ver `.docs-mobile/architecture-and-techniques/acceso-y-auth.md`.
- */
+const KEY = 'biometric_enabled';
 
 export async function isBiometricAvailable(): Promise<boolean> {
-  const hasHardware = await LocalAuthentication.hasHardwareAsync();
-  const enrolled = await LocalAuthentication.isEnrolledAsync();
-  return hasHardware && enrolled;
+  const [hw, enrolled] = await Promise.all([
+    LocalAuthentication.hasHardwareAsync(),
+    LocalAuthentication.isEnrolledAsync(),
+  ]);
+  return hw && enrolled;
 }
 
-/** Stub M0: todavía no bloquea el acceso. Se activa en M1. */
-export async function unlock(): Promise<{ ok: boolean; reason: string }> {
-  return { ok: true, reason: 'not-implemented-until-m1' };
+export async function isBiometricEnabled(): Promise<boolean> {
+  return (await SecureStore.getItemAsync(KEY)) === '1';
+}
+
+export async function setBiometricEnabled(v: boolean): Promise<void> {
+  await SecureStore.setItemAsync(KEY, v ? '1' : '0');
+}
+
+export async function authenticate(): Promise<boolean> {
+  const r = await LocalAuthentication.authenticateAsync({
+    promptMessage: 'Desbloqueá Zaire Mobile',
+    fallbackLabel: 'Usar PIN',
+    cancelLabel: 'Cancelar',
+  });
+  return r.success;
 }
