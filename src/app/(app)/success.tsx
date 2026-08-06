@@ -31,7 +31,7 @@ export default function Success() {
         </View>
       </View>
       <View style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
-        <PrimaryButton variant="navy" label="Volver al inicio" onPress={() => router.dismissAll()} />
+        <PrimaryButton label="Volver al inicio" onPress={() => router.dismissAll()} />
       </View>
     </SafeAreaView>
   );

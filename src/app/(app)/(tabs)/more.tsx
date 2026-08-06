@@ -32,7 +32,6 @@ export default function More() {
   const { forceOffline, setForceOffline } = useConnectivity();
   const lock = useLock();
   const [bioAvail, setBioAvail] = useState(false);
-  const [textBig, setTextBig] = useState(false); // stub (sin efecto todavía)
 
   useEffect(() => {
     isBiometricAvailable().then(setBioAvail);
@@ -110,12 +109,6 @@ export default function More() {
               <Switch value={lock.enabled} onValueChange={lock.setEnabled} trackColor={{ true: brand.orange, false: '#CBD0D8' }} />
             </PrefRow>
           ) : null}
-          <PrefRow icon="textSize" label="Tamaño de texto" divider>
-            <View style={{ flexDirection: 'row', gap: 4, padding: 3, backgroundColor: c.surface2, borderRadius: 11 }}>
-              <SizePill active={!textBig} onPress={() => setTextBig(false)} size={12} colors={c} />
-              <SizePill active={textBig} onPress={() => setTextBig(true)} size={15} colors={c} />
-            </View>
-          </PrefRow>
           <PrefRow icon="wifiOff" label="Ver estado sin señal" onPress={() => Alert.alert('Sin señal', 'La vista de estado offline llega en M1.')}>
             <Icon name="chevronRight" size={18} color={c.fg3} strokeWidth={2.2} />
           </PrefRow>

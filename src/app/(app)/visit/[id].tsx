@@ -134,7 +134,7 @@ export default function VisitDetail() {
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 44, marginBottom: 8 }}>
         <HeaderIconButton icon="chevronLeft" size={40} onPress={() => router.back()} />
-        <Text style={{ fontFamily: fonts.interSb, fontSize: 15, color: c.fg }}>Detalle de visita</Text>
+        <Text style={{ fontFamily: fonts.ralewayB, fontSize: 17, color: c.fg }}>Detalle de visita</Text>
         {visit ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 11, borderRadius: 20, backgroundColor: tint(s.color, 0.13) }}>
             <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: s.color }} />
@@ -228,7 +228,7 @@ export default function VisitDetail() {
                     label={inside && action.next === 'en_sitio' ? 'Confirmar arribo' : action.label}
                     iconRight={action.next === 'en_sitio' ? 'pin' : 'check'}
                     loading={marking}
-                    variant={action.next === 'finalizada' ? 'navy' : 'outline'}
+                    variant={action.next === 'finalizada' ? 'orange' : 'outline'}
                     onPress={action.next === 'finalizada' ? () => router.push({ pathname: '/checklist/[id]', params: { id: id! } }) : onAdvance}
                   />
                   {action.next === 'en_sitio' ? (

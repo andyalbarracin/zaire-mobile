@@ -89,7 +89,7 @@ export function LockOverlay() {
         <Text style={{ fontFamily: fonts.ralewayB, fontSize: 22, color: '#fff' }}>App bloqueada</Text>
         <Text style={{ fontFamily: fonts.inter, fontSize: 14, color: 'rgba(255,255,255,0.82)', textAlign: 'center' }}>Usá tu huella o cara para volver a entrar.</Text>
         <View style={{ width: 240, marginTop: 6 }}>
-          <PrimaryButton variant="navy" label="Desbloquear" iconRight="shieldCheck" onPress={unlock} />
+          <PrimaryButton label="Desbloquear" iconRight="shieldCheck" onPress={unlock} />
         </View>
       </View>
     </View>

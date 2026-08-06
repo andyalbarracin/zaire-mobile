@@ -89,12 +89,12 @@ export default function Checklist() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, height: 44, marginBottom: 8 }}>
         <HeaderIconButton icon="chevronLeft" size={40} onPress={() => router.back()} />
-        <Text style={{ fontFamily: fonts.interSb, fontSize: 15, color: c.fg }}>Checklist de trabajo</Text>
+        <Text style={{ fontFamily: fonts.ralewayB, fontSize: 17, color: c.fg }}>Checklist de trabajo</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 22 }}>
-          <ProgressRing size={72} stroke={9} progress={pct} trackColor={c.surface2} color={brand.navy}>
+          <ProgressRing size={72} stroke={9} progress={pct} trackColor={c.surface2}>
             <Text style={{ fontFamily: fonts.ralewayB, fontSize: 16, color: c.fg, fontVariant: ['tabular-nums'] }}>{done}/{items.length}</Text>
           </ProgressRing>
           <View style={{ flex: 1 }}>
@@ -110,7 +110,7 @@ export default function Checklist() {
               onPress={() => toggle(i)}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: c.surface, borderRadius: 15, borderWidth: 1, borderColor: c.line, padding: 15 }}
             >
-              <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: it.done ? brand.navy : 'transparent', borderWidth: it.done ? 0 : 2, borderColor: c.fg3, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: it.done ? brand.orange : 'transparent', borderWidth: it.done ? 0 : 2, borderColor: c.fg3, alignItems: 'center', justifyContent: 'center' }}>
                 {it.done ? <Icon name="check" size={16} color="#fff" strokeWidth={3.2} /> : null}
               </View>
               <Text style={{ flex: 1, fontFamily: fonts.interM, fontSize: 15, color: it.done ? c.fg : c.fg2, textDecorationLine: it.done ? 'line-through' : 'none' }}>{it.label}</Text>
@@ -134,7 +134,7 @@ export default function Checklist() {
       </ScrollView>
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: insets.bottom + 14, backgroundColor: c.bg, borderTopWidth: 1, borderTopColor: c.line }}>
-        <PrimaryButton variant="navy" label="Finalizar visita" iconRight="check" loading={busy} onPress={confirmFinalize} />
+        <PrimaryButton label="Finalizar visita" iconRight="check" loading={busy} onPress={confirmFinalize} />
       </View>
     </SafeAreaView>
   );
