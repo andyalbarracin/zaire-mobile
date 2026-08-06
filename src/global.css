@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Variables de tema Zaire Mobile. Los colores semánticos remapean por esquema
+ * (claro/oscuro). Valores tomados del prototipo (ZaireMobile.dc.html → themeVars).
+ * Los canales RGB van separados por espacio para permitir utilidades de opacidad.
+ */
+@layer base {
+  :root {
+    --color-bg: 246 244 241; /* #F6F4F1 */
+    --color-surface: 255 255 255; /* #FFFFFF */
+    --color-surface2: 236 234 228; /* #ECEAE4 */
+    --color-fg: 27 42 68; /* #1B2A44 */
+    --color-fg2: 90 100 116; /* #5A6474 */
+    --color-fg3: 154 161 173; /* #9AA1AD */
+    --color-nav: 255 255 255; /* #FFFFFF */
+    --line: rgba(27, 42, 68, 0.09);
+    --nav-line: rgba(27, 42, 68, 0.08);
+    --tile: rgba(226, 204, 156, 0.5);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-bg: 10 13 15; /* #0A0D0F */
+      --color-surface: 22 26 29; /* #161A1D */
+      --color-surface2: 32 38 42; /* #20262A */
+      --color-fg: 246 244 241; /* #F6F4F1 */
+      --color-fg2: 174 180 188; /* #AEB4BC */
+      --color-fg3: 124 131 139; /* #7C838B */
+      --color-nav: 12 16 19; /* #0C1013 */
+      --line: rgba(246, 244, 241, 0.1);
+      --nav-line: rgba(246, 244, 241, 0.08);
+      --tile: rgba(226, 204, 156, 0.16);
+    }
+  }
+}
