@@ -50,6 +50,7 @@ export const status = {
   encurso: { color: '#F26A21', label: 'En curso' },
   ensitio: { color: '#3EBE6A', label: 'En sitio' },
   finalizada: { color: '#1B2A44', label: 'Finalizada' },
+  cancelada: { color: '#8B93A3', label: 'Cancelada' },
   operativo: { color: '#3EBE6A', label: 'Operativo' },
   atencion: { color: '#E0A03A', label: 'Atención' },
   critico: { color: '#E03A3A', label: 'Crítico' },

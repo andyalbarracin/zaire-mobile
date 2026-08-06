@@ -1,22 +1,20 @@
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { FolderCard, type FolderCardProps } from '@/components/FolderCard';
+import { FolderCard } from '@/components/FolderCard';
 import { FolderSurface } from '@/components/FolderSurface';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { useBootstrap } from '@/lib/bootstrap';
+import { isToday, visitToCard } from '@/lib/field/map';
+import type { FieldVisit } from '@/lib/field/types';
+import { useMyVisits } from '@/lib/field/useVisits';
 import { ROLE_LABELS } from '@/lib/types';
 import { brand, fonts } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
-// --- Datos de muestra (M0 no tiene módulo Field todavía). Fieles al prototipo. ---
-const SAMPLE_VISITS: FolderCardProps[] = [
-  { title: 'YPF · Planta La Plata', subtitle: 'Sala de Compresores', status: 'encurso', time: '09:00', icon: 'gauge' },
-  { title: 'Pampa Energía', subtitle: 'Subestación Norte', status: 'planificada', time: '11:30', icon: 'bolt' },
-  { title: 'Aluar', subtitle: 'Línea de Extrusión', status: 'ensitio', time: '14:00', icon: 'factory' },
-];
+// Semana / puntos siguen siendo de muestra (la gamificación es una slice posterior de M1).
 const WEEK = [
   { d: 'L', done: true },
   { d: 'M', done: true },
@@ -28,18 +26,23 @@ const WEEK = [
 ];
 const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-
-function shortDate(d: Date): string {
-  return `${DIAS[d.getDay()]} · ${d.getDate()} ${MESES[d.getMonth()]}`;
-}
+const shortDate = (d: Date) => `${DIAS[d.getDay()]} · ${d.getDate()} ${MESES[d.getMonth()]}`;
 
 export default function Home() {
   const c = useThemeColors();
-  const router = useRouter();
   const { profile, role, companyName } = useBootstrap();
+  const { visits } = useMyVisits();
 
   const firstName = (profile?.full_name ?? '').trim().split(' ')[0];
   const greeting = `¡Buen día${firstName ? `, ${firstName}` : ''}!`;
+
+  const today = visits.filter((v) => isToday(v.scheduled_at));
+  const hasToday = today.length > 0;
+  // Si no hay visitas hoy, mostramos las más recientes para que el Home no quede vacío.
+  const shown = hasToday ? today : visits.slice(0, 6);
+  const total = shown.length;
+  const done = shown.filter((v) => v.status === 'finalizada').length;
+  const pct = total ? done / total : 0;
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
@@ -49,23 +52,11 @@ export default function Home() {
           <HeaderIconButton icon="menu" onPress={() => router.navigate('/more')} />
           <View style={{ position: 'relative' }}>
             <HeaderIconButton icon="bell" onPress={() => {}} />
-            <View
-              style={{
-                position: 'absolute',
-                top: 9,
-                right: 10,
-                width: 8,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: brand.orange,
-                borderWidth: 2,
-                borderColor: c.surface,
-              }}
-            />
+            <View style={{ position: 'absolute', top: 9, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: brand.orange, borderWidth: 2, borderColor: c.surface }} />
           </View>
         </View>
 
-        {/* Saludo + datos reales (verificación de pipeline) */}
+        {/* Saludo + datos reales */}
         <Text style={{ fontFamily: fonts.ralewayB, fontSize: 26, color: c.fg, letterSpacing: -0.3 }}>{greeting}</Text>
         <Text style={{ fontFamily: fonts.inter, fontSize: 15, color: c.fg2, marginTop: 3 }}>Acá va tu resumen de hoy.</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6, marginBottom: 20 }}>
@@ -75,29 +66,26 @@ export default function Home() {
           </Text>
         </View>
 
-        {/* Hero: Progreso diario (datos de muestra) */}
-        <FolderSurface
-          radius={20}
-          cut={24}
-          gradient={c.hero}
-          border={c.line}
-          style={{ marginBottom: 26 }}
-          contentStyle={{ paddingHorizontal: 19, paddingTop: 19, paddingBottom: 17 }}
-        >
+        {/* Hero: progreso real del día */}
+        <FolderSurface radius={20} cut={24} gradient={c.hero} border={c.line} style={{ marginBottom: 26 }} contentStyle={{ paddingHorizontal: 19, paddingTop: 19, paddingBottom: 17 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
-            <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, letterSpacing: 0.2 }}>Progreso diario</Text>
+            <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, letterSpacing: 0.2 }}>{hasToday ? 'Progreso diario' : 'Tus visitas'}</Text>
             <Text style={{ fontFamily: fonts.interM, fontSize: 11.5, color: c.fg3 }}>{shortDate(new Date())}</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
-                <Text style={{ fontFamily: fonts.ralewayXb, fontSize: 46, lineHeight: 46, color: c.fg, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>3</Text>
-                <Text style={{ fontFamily: fonts.interM, fontSize: 15, color: c.fg2, paddingBottom: 5 }}>de 5 visitas</Text>
+                <Text style={{ fontFamily: fonts.ralewayXb, fontSize: 46, lineHeight: 46, color: c.fg, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>{done}</Text>
+                <Text style={{ fontFamily: fonts.interM, fontSize: 15, color: c.fg2, paddingBottom: 5 }}>de {total} visitas</Text>
               </View>
-              <Bars style={{ marginTop: 14 }} />
+              <View style={{ flexDirection: 'row', gap: 5, marginTop: 14 }}>
+                {['#E03A3A', '#F26A21', '#E0A03A'].map((col) => (
+                  <View key={col} style={{ width: 34, height: 6, borderRadius: 3, backgroundColor: col }} />
+                ))}
+              </View>
             </View>
-            <ProgressRing size={88} progress={0.6} trackColor={c.surface2}>
-              <Text style={{ fontFamily: fonts.ralewayB, fontSize: 20, color: c.fg, fontVariant: ['tabular-nums'] }}>60%</Text>
+            <ProgressRing size={88} progress={pct} trackColor={c.surface2}>
+              <Text style={{ fontFamily: fonts.ralewayB, fontSize: 20, color: c.fg, fontVariant: ['tabular-nums'] }}>{Math.round(pct * 100)}%</Text>
             </ProgressRing>
           </View>
           <View style={{ height: 1, backgroundColor: c.line, marginTop: 17, marginBottom: 15 }} />
@@ -109,44 +97,31 @@ export default function Home() {
             {WEEK.map((w, i) => (
               <View key={i} style={{ alignItems: 'center', gap: 7 }}>
                 <Text style={{ fontFamily: fonts.interSb, fontSize: 10, letterSpacing: 0.3, color: w.done ? brand.orange : c.fg3 }}>{w.d}</Text>
-                <View
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 5,
-                    backgroundColor: w.done ? brand.orange : 'transparent',
-                    borderWidth: w.done ? 0 : 1.5,
-                    borderColor: c.fg3,
-                  }}
-                />
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: w.done ? brand.orange : 'transparent', borderWidth: w.done ? 0 : 1.5, borderColor: c.fg3 }} />
               </View>
             ))}
           </View>
         </FolderSurface>
 
-        {/* Visitas de hoy */}
+        {/* Visitas de hoy (reales) */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 }}>
-          <Text style={{ fontFamily: fonts.ralewayB, fontSize: 18, color: c.fg }}>Visitas de hoy</Text>
-          <Text onPress={() => router.navigate('/field')} style={{ fontFamily: fonts.interSb, fontSize: 13, color: brand.orange }}>
-            Ver todas
-          </Text>
+          <Text style={{ fontFamily: fonts.ralewayB, fontSize: 18, color: c.fg }}>{hasToday ? 'Visitas de hoy' : 'Últimas visitas'}</Text>
+          <Text onPress={() => router.navigate('/field')} style={{ fontFamily: fonts.interSb, fontSize: 13, color: brand.orange }}>Ver todas</Text>
         </View>
-        <View style={{ gap: 12 }}>
-          {SAMPLE_VISITS.map((v, i) => (
-            <FolderCard key={i} {...v} onPress={() => router.navigate('/field')} />
-          ))}
-        </View>
+        {shown.length === 0 ? (
+          <Text style={{ fontFamily: fonts.inter, fontSize: 14, color: c.fg2 }}>Todavía no tenés visitas.</Text>
+        ) : (
+          <View style={{ gap: 12 }}>
+            {shown.slice(0, 5).map((v) => (
+              <FolderCard key={v.id} {...visitToCard(v)} onPress={() => openVisit(v)} />
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function Bars({ style }: { style?: object }) {
-  return (
-    <View style={[{ flexDirection: 'row', gap: 5 }, style]}>
-      {['#E03A3A', '#F26A21', '#E0A03A'].map((color) => (
-        <View key={color} style={{ width: 34, height: 6, borderRadius: 3, backgroundColor: color }} />
-      ))}
-    </View>
-  );
+function openVisit(v: FieldVisit) {
+  router.push({ pathname: '/visit/[id]', params: { id: v.id } });
 }
