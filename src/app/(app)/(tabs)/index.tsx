@@ -1,8 +1,12 @@
 import { useScrollToTop } from '@react-navigation/native';
 import { router } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { useRef } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const isoNavy = require('../../../../assets/brand/iso-navy.png');
+const isoWhite = require('../../../../assets/brand/lockup-white.png');
 
 import { FolderCard } from '@/components/FolderCard';
 import { FolderSurface } from '@/components/FolderSurface';
@@ -55,6 +59,7 @@ export default function Home() {
   const { profile, role, companyName } = useBootstrap();
   const { visits } = useMyVisits();
   const { isOnline } = useConnectivity();
+  const { colorScheme } = useColorScheme();
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
 
@@ -74,10 +79,13 @@ export default function Home() {
       <ScrollView ref={scrollRef} contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <View style={{ position: 'absolute', left: 0, right: 0, alignItems: 'center' }} pointerEvents="none">
+            <Image source={colorScheme === 'dark' ? isoWhite : isoNavy} style={{ width: 30, height: 30, resizeMode: 'contain' }} />
+          </View>
           <Pressable onPress={() => router.navigate('/more')}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, paddingHorizontal: 13, borderRadius: 21, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }}>
               <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: isOnline ? '#3EBE6A' : '#8B93A3' }} />
-              <Text numberOfLines={1} style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg, maxWidth: 165 }}>{companyName || 'Empresa Z'}</Text>
+              <Text numberOfLines={1} style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg, maxWidth: 100 }}>{companyName || 'Empresa Z'}</Text>
             </View>
           </Pressable>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
@@ -93,7 +101,7 @@ export default function Home() {
         <Text style={{ fontFamily: fonts.ralewayB, fontSize: 26, color: c.fg, letterSpacing: -0.3 }}>{greeting}</Text>
         <Text style={{ fontFamily: fonts.inter, fontSize: 15, color: c.fg2, marginTop: 3 }}>Acá va tu resumen de hoy.</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6, marginBottom: 20 }}>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: brand.orange }} />
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: brand.navy }} />
           <Text style={{ fontFamily: fonts.interSb, fontSize: 12, color: c.fg3, letterSpacing: 0.2 }}>
             {companyName} · {ROLE_LABELS[role]}
           </Text>
@@ -141,7 +149,7 @@ export default function Home() {
         {/* Visitas de hoy (reales) */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 }}>
           <Text style={{ fontFamily: fonts.ralewayB, fontSize: 18, color: c.fg }}>{hasToday ? 'Visitas de hoy' : 'Últimas visitas'}</Text>
-          <Text onPress={() => router.navigate('/field')} style={{ fontFamily: fonts.interSb, fontSize: 13, color: brand.orange }}>Ver todas</Text>
+          <Text onPress={() => router.navigate('/field')} style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2 }}>Ver todas ›</Text>
         </View>
         {shown.length === 0 ? (
           <Text style={{ fontFamily: fonts.inter, fontSize: 14, color: c.fg2 }}>Todavía no tenés visitas.</Text>

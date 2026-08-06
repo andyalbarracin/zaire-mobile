@@ -26,16 +26,16 @@ export const light = {
 };
 
 export const dark: typeof light = {
-  bg: '#0A0D0F', // negro neutro (se mantiene; NO el navy #0E1626 de la paleta)
-  surface: '#182338',
-  surface2: '#202C44',
+  bg: '#0A0D0F', // negro neutro (se mantiene)
+  surface: '#17191E', // negro/gris premium (NO navy — quedaba "apagado")
+  surface2: '#22252B',
   fg: '#F4F1EA',
   fg2: '#AEB6C4',
-  fg3: '#727C8E',
-  nav: '#0C1013',
+  fg3: '#8892A0',
+  nav: '#0C0E11',
   line: 'rgba(244,241,234,0.10)',
   navLine: 'rgba(244,241,234,0.08)',
-  tile: '#212E48',
+  tile: '#24272E',
   primary: '#F26A21',
   primaryPressed: '#D85C17',
   onPrimary: '#0E1626',
@@ -74,6 +74,12 @@ export const status = {
 } as const;
 
 export type StatusKey = keyof typeof status;
+
+/** Color de estado ajustado por tema: algunos oscuros (finalizada = navy) no se ven en dark. */
+export function statusColorFor(key: StatusKey, isDark: boolean): string {
+  if (isDark && key === 'finalizada') return '#8AA0BE';
+  return status[key].color;
+}
 
 /** Nombres de familia exactos que exportan @expo-google-fonts/{raleway,inter}. */
 export const fonts = {

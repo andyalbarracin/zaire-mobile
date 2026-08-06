@@ -5,7 +5,9 @@ import Svg, { Path } from 'react-native-svg';
 import { folderPath } from '@/components/folderShape';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { tint } from '@/theme/color';
-import { fonts, radii, status as STATUS, type StatusKey } from '@/theme/tokens';
+import { useColorScheme } from 'nativewind';
+
+import { fonts, radii, status as STATUS, statusColorFor, type StatusKey } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 /**
@@ -37,8 +39,10 @@ export function FolderCard({
   onPress,
 }: FolderCardProps) {
   const c = useThemeColors();
+  const { colorScheme } = useColorScheme();
   const [size, setSize] = useState({ w: 0, h: 0 });
   const s = STATUS[status] ?? STATUS.none;
+  const color = statusColorFor(status, colorScheme === 'dark');
   const showStatus = s.label.length > 0;
 
   const onLayout = (e: LayoutChangeEvent) => {
@@ -58,8 +62,8 @@ export function FolderCard({
           </Svg>
         )}
 
-        <View style={[styles.tile, { backgroundColor: tint(s.color, 0.13) }]}>
-          <Icon name={icon} size={24} color={s.color} strokeWidth={2} />
+        <View style={[styles.tile, { backgroundColor: tint(color, 0.13) }]}>
+          <Icon name={icon} size={24} color={color} strokeWidth={2} />
         </View>
 
         <View style={styles.center}>
@@ -73,8 +77,8 @@ export function FolderCard({
           ) : null}
           {showStatus && (
             <View style={styles.statusRow}>
-              <View style={[styles.dot, { backgroundColor: s.color }]} />
-              <Text style={[styles.statusLabel, { color: s.color }]}>{s.label}</Text>
+              <View style={[styles.dot, { backgroundColor: color }]} />
+              <Text style={[styles.statusLabel, { color: color }]}>{s.label}</Text>
             </View>
           )}
         </View>
