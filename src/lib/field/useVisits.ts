@@ -73,48 +73,39 @@ export function useVisit(id: string | undefined) {
   const [error, setError] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
+  const load = useCallback(async () => {
     if (!id) {
       setLoading(false);
       return;
     }
     const key = `visit:${id}`;
-
-    (async () => {
-      const cached = await readCache<FieldVisit>(key);
-      if (cached && mounted) {
-        setVisit(cached);
-        setLoading(false);
-      }
-      if (!isOnline) {
-        if (mounted) {
-          setStale(!!cached);
-          setLoading(false);
-        }
-        return;
-      }
-      try {
-        const fresh = await getVisit(supabase, id);
-        if (mounted) {
-          setVisit(fresh);
-          setStale(false);
-        }
-        if (fresh) void writeCache(key, fresh);
-      } catch {
-        if (mounted) {
-          setStale(!!cached);
-          if (!cached) setError('No se pudo cargar la visita.');
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
+    setError(null);
+    const cached = await readCache<FieldVisit>(key);
+    if (cached) {
+      setVisit(cached);
+      setLoading(false);
+    }
+    if (!isOnline) {
+      setStale(!!cached);
+      setLoading(false);
+      return;
+    }
+    try {
+      const fresh = await getVisit(supabase, id);
+      setVisit(fresh);
+      setStale(false);
+      if (fresh) void writeCache(key, fresh);
+    } catch {
+      setStale(!!cached);
+      if (!cached) setError('No se pudo cargar la visita.');
+    } finally {
+      setLoading(false);
+    }
   }, [supabase, id, isOnline]);
 
-  return { visit, loading, error, stale };
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { visit, loading, error, stale, refetch: load, setVisit };
 }

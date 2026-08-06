@@ -1,15 +1,23 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Location from 'expo-location';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DummyMap } from '@/components/field/DummyMap';
+import { VisitMap } from '@/components/field/VisitMap';
 import { FolderSurface } from '@/components/FolderSurface';
 import { Icon } from '@/components/icons/Icon';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { writeCache } from '@/lib/cache';
+import { useConnectivity } from '@/lib/connectivity';
+import { distanceMeters, formatDistance } from '@/lib/field/geo';
 import { STATUS_TO_KEY } from '@/lib/field/map';
+import { markArrival } from '@/lib/field/mutations';
 import type { FieldVisit, VisitPurpose } from '@/lib/field/types';
 import { useVisit } from '@/lib/field/useVisits';
+import { useTenant } from '@/lib/tenant';
 import { tint } from '@/theme/color';
 import { brand, fonts, status as STATUS } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
@@ -32,10 +40,56 @@ function hm(iso: string | null): string {
 export default function VisitDetail() {
   const c = useThemeColors();
   const insets = useSafeAreaInsets();
+  const { supabase } = useTenant();
+  const { isOnline } = useConnectivity();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { visit, loading, error } = useVisit(id);
+  const { visit, loading, error, setVisit } = useVisit(id);
+
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [perm, setPerm] = useState<Location.PermissionStatus | null>(null);
+  const [marking, setMarking] = useState(false);
+
+  // Ubicación en vivo (foreground). El arribo automático con app cerrada (background) es dev build.
+  useEffect(() => {
+    let sub: Location.LocationSubscription | null = null;
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setPerm(status);
+      if (status !== Location.PermissionStatus.GRANTED) return;
+      sub = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.Balanced, distanceInterval: 10, timeInterval: 5000 },
+        (loc) => setUserLoc({ lat: loc.coords.latitude, lng: loc.coords.longitude }),
+      );
+    })();
+    return () => sub?.remove();
+  }, []);
 
   const s = visit ? STATUS[STATUS_TO_KEY[visit.status]] : STATUS.none;
+  const site = visit?.site;
+  const hasCoords = site?.latitude != null && site?.longitude != null;
+  const radius = site?.geofence_radius_m ?? 150;
+  const dist = userLoc && hasCoords ? distanceMeters(userLoc.lat, userLoc.lng, site!.latitude!, site!.longitude!) : null;
+  const inside = dist != null && dist <= radius;
+  const canMark = visit?.status === 'planificada' || visit?.status === 'en_curso';
+
+  async function onMarkArrival() {
+    if (!id || !visit) return;
+    if (!isOnline) {
+      Alert.alert('Sin conexión', 'Necesitás conexión para confirmar el arribo. El registro offline llega en la próxima slice.');
+      return;
+    }
+    setMarking(true);
+    try {
+      const now = await markArrival(supabase, id);
+      const updated: FieldVisit = { ...visit, status: 'en_sitio', arrived_at: now };
+      setVisit(updated);
+      void writeCache(`visit:${id}`, updated);
+    } catch {
+      Alert.alert('Error', 'No pudimos registrar el arribo. Probá de nuevo.');
+    } finally {
+      setMarking(false);
+    }
+  }
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
@@ -67,7 +121,7 @@ export default function VisitDetail() {
         </View>
       ) : (
         <>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 110 }} showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
             {/* Card empresa / sitio */}
             <FolderSurface radius={20} cut={24} fill={c.surface} border={c.line} style={{ marginBottom: 18 }} contentStyle={{ padding: 18 }}>
               <View style={{ flexDirection: 'row', gap: 13, alignItems: 'flex-start' }}>
@@ -91,8 +145,27 @@ export default function VisitDetail() {
               <InfoRow icon="pin" colors={c}>{siteAddress(visit)}</InfoRow>
             </FolderSurface>
 
-            {/* Mapa dummy */}
-            <DummyMap radiusM={visit.site?.geofence_radius_m} />
+            {/* Mapa real (o dummy si el sitio no tiene coords) */}
+            {hasCoords ? (
+              <VisitMap latitude={site!.latitude!} longitude={site!.longitude!} radiusM={radius} />
+            ) : (
+              <DummyMap radiusM={radius} />
+            )}
+
+            {/* Estado de geocerca */}
+            <View style={{ marginTop: 12 }}>
+              {!hasCoords ? (
+                <GeoNote color={c.fg3} icon="pin">Este sitio no tiene ubicación cargada.</GeoNote>
+              ) : perm === Location.PermissionStatus.DENIED ? (
+                <GeoNote color={c.fg3} icon="pin">Activá el permiso de ubicación para ver tu distancia al sitio.</GeoNote>
+              ) : dist == null ? (
+                <GeoNote color={c.fg3} icon="pin">Obteniendo tu ubicación…</GeoNote>
+              ) : inside ? (
+                <GeoNote color="#3EBE6A" icon="check">Estás en el área de trabajo.</GeoNote>
+              ) : (
+                <GeoNote color={c.fg2} icon="pin">Estás a {formatDistance(dist)} del sitio.</GeoNote>
+              )}
+            </View>
 
             {/* Actividad */}
             <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, marginTop: 18, marginBottom: 13 }}>Actividad</Text>
@@ -101,11 +174,19 @@ export default function VisitDetail() {
 
           {/* CTA fija abajo */}
           <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: insets.bottom + 12, backgroundColor: c.bg, borderTopWidth: 1, borderTopColor: c.line }}>
-            <PrimaryButton
-              label="Marcar en sitio"
-              iconRight="pin"
-              onPress={() => Alert.alert('Próximamente', 'El cambio de estado (arribo, reporte) llega en la próxima etapa de M1.')}
-            />
+            {canMark ? (
+              <PrimaryButton
+                label={inside ? 'Confirmar arribo' : 'Marcar en sitio'}
+                iconRight="pin"
+                loading={marking}
+                onPress={onMarkArrival}
+              />
+            ) : (
+              <View style={{ height: 56, borderRadius: 16, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
+                <Icon name="check" size={18} color={s.color} strokeWidth={2.4} />
+                <Text style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg2 }}>Visita {s.label.toLowerCase()}</Text>
+              </View>
+            )}
           </View>
         </>
       )}
@@ -116,6 +197,15 @@ export default function VisitDetail() {
 function siteAddress(v: FieldVisit): string {
   const parts = [v.site?.city, v.site?.province].filter(Boolean);
   return parts.length ? parts.join(', ') : 'Sin dirección';
+}
+
+function GeoNote({ children, color, icon }: { children: React.ReactNode; color: string; icon: 'pin' | 'check' }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Icon name={icon} size={16} color={color} strokeWidth={2.2} />
+      <Text style={{ fontFamily: fonts.interM, fontSize: 13.5, color }}>{children}</Text>
+    </View>
+  );
 }
 
 function InfoRow({ icon, children, colors }: { icon: 'doc' | 'pin'; children: React.ReactNode; colors: ReturnType<typeof useThemeColors> }) {
