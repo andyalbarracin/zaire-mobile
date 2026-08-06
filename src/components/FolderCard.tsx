@@ -23,6 +23,8 @@ export interface FolderCardProps {
   title: string;
   subtitle?: string;
   status?: StatusKey;
+  /** Texto de estado a mostrar (si difiere del label del token; p. ej. estados de Assets). */
+  statusLabel?: string;
   time?: string;
   icon?: IconName;
   chevron?: boolean;
@@ -33,6 +35,7 @@ export function FolderCard({
   title,
   subtitle,
   status = 'none',
+  statusLabel,
   time,
   icon = 'box',
   chevron = true,
@@ -43,7 +46,8 @@ export function FolderCard({
   const [size, setSize] = useState({ w: 0, h: 0 });
   const s = STATUS[status] ?? STATUS.none;
   const color = statusColorFor(status, colorScheme === 'dark');
-  const showStatus = s.label.length > 0;
+  const label = statusLabel ?? s.label;
+  const showStatus = label.length > 0;
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -78,7 +82,7 @@ export function FolderCard({
           {showStatus && (
             <View style={styles.statusRow}>
               <View style={[styles.dot, { backgroundColor: color }]} />
-              <Text style={[styles.statusLabel, { color: color }]}>{s.label}</Text>
+              <Text style={[styles.statusLabel, { color: color }]}>{label}</Text>
             </View>
           )}
         </View>

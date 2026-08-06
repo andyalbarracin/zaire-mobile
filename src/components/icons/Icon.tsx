@@ -36,9 +36,16 @@ export type IconName =
   | 'moon'
   | 'textSize'
   | 'logout'
-  | 'camera';
+  | 'camera'
+  | 'search';
 
 const PATHS: Record<IconName, ReactNode> = {
+  search: (
+    <>
+      <Circle cx={11} cy={11} r={7} />
+      <Path d="M16.5 16.5L21 21" />
+    </>
+  ),
   gauge: (
     <>
       <Path d="M12 14a2 2 0 100-4 2 2 0 000 4z" />
