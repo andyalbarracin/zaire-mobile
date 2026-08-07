@@ -9,10 +9,10 @@ const isoNavy = require('../../../../assets/brand/iso-navy.png');
 const isoWhite = require('../../../../assets/brand/lockup-white.png');
 
 import { FolderCard } from '@/components/FolderCard';
-import { ModuleFolders } from '@/components/ModuleFolders';
+import { FolderSurface } from '@/components/FolderSurface';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { OfflinePill } from '@/components/ui/OfflinePill';
-import { useAssets } from '@/lib/assets/useAssets';
+import { ProgressRing } from '@/components/ui/ProgressRing';
 import { useBootstrap } from '@/lib/bootstrap';
 import { useConnectivity } from '@/lib/connectivity';
 import { isToday, visitToCard } from '@/lib/field/map';
@@ -66,7 +66,7 @@ function workspaceInitial(name: string): string {
 
 export default function Home() {
   const c = useThemeColors();
-  const { profile, role, companyName, modules } = useBootstrap();
+  const { profile, role, companyName } = useBootstrap();
   const { visits } = useMyVisits();
   const { isOnline } = useConnectivity();
   const { colorScheme } = useColorScheme();
@@ -109,11 +109,6 @@ export default function Home() {
   const weekData = useReal ? realWeek : WEEK;
   const weekPts = useReal ? realPts : 206;
 
-  // Salud de la flota (para la pestaña Assets del archivero).
-  const { assets: assetList } = useAssets();
-  const assetCount = assetList.length;
-  const avgHealth = assetCount > 0 ? Math.round(assetList.reduce((s, a) => s + (a.health ?? 100), 0) / assetCount) : null;
-
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
       <ScrollView ref={scrollRef} contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
@@ -148,12 +143,44 @@ export default function Home() {
           </Text>
         </View>
 
-        {/* Archivero de estado por módulo (pestañas file-folder, tap en el cuerpo para entrar) */}
-        <ModuleFolders
-          modules={modules}
-          field={{ done, total, pct, week: weekData, pts: weekPts, dateLabel: shortDate(new Date()), hasToday }}
-          assets={{ avgHealth, count: assetCount }}
-        />
+        {/* Hero: progreso real del día */}
+        <Pressable onPress={() => router.navigate('/field')} style={{ marginBottom: 26 }}>
+        <FolderSurface radius={20} cut={24} gradient={c.hero} border={c.line} contentStyle={{ paddingHorizontal: 19, paddingTop: 19, paddingBottom: 17 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
+            <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, letterSpacing: 0.2 }}>{hasToday ? 'Progreso diario' : 'Tus visitas'}</Text>
+            <Text style={{ fontFamily: fonts.interM, fontSize: 11.5, color: c.fg3 }}>{shortDate(new Date())}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+                <Text style={{ fontFamily: fonts.ralewayXb, fontSize: 46, lineHeight: 46, color: c.fg, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>{done}</Text>
+                <Text style={{ fontFamily: fonts.interM, fontSize: 15, color: c.fg2, paddingBottom: 5 }}>de {total} visitas</Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 5, marginTop: 14 }}>
+                {['#E03A3A', '#F26A21', '#E0A03A'].map((col) => (
+                  <View key={col} style={{ width: 34, height: 6, borderRadius: 3, backgroundColor: col }} />
+                ))}
+              </View>
+            </View>
+            <ProgressRing size={88} progress={pct} trackColor={c.surface2}>
+              <Text style={{ fontFamily: fonts.ralewayB, fontSize: 20, color: c.fg, fontVariant: ['tabular-nums'] }}>{Math.round(pct * 100)}%</Text>
+            </ProgressRing>
+          </View>
+          <View style={{ height: 1, backgroundColor: c.line, marginTop: 17, marginBottom: 15 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 }}>
+            <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg }}>Puntos de la semana</Text>
+            <Text style={{ fontFamily: fonts.interB, fontSize: 14, color: brand.orange, fontVariant: ['tabular-nums'] }}>{weekPts} pts</Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            {weekData.map((w, i) => (
+              <View key={i} style={{ alignItems: 'center', gap: 7 }}>
+                <Text style={{ fontFamily: fonts.interSb, fontSize: 10, letterSpacing: 0.3, color: w.done ? brand.orange : c.fg3 }}>{w.d}</Text>
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: w.done ? brand.orange : 'transparent', borderWidth: w.done ? 0 : 1.5, borderColor: c.fg3 }} />
+              </View>
+            ))}
+          </View>
+        </FolderSurface>
+        </Pressable>
 
         {/* Visitas de hoy (reales) */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 }}>
