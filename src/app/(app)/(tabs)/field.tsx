@@ -10,11 +10,13 @@ import { FieldMap } from '@/components/field/FieldMap';
 import { FolderCard } from '@/components/FolderCard';
 import { folderPath } from '@/components/folderShape';
 import { Icon } from '@/components/icons/Icon';
+import { ModuleHero } from '@/components/ModuleHero';
 import { OfflinePill } from '@/components/ui/OfflinePill';
+import { ProgressRing } from '@/components/ui/ProgressRing';
 import { isToday, STATUS_TO_KEY, visitToCard } from '@/lib/field/map';
 import type { FieldVisit } from '@/lib/field/types';
 import { useMyVisits } from '@/lib/field/useVisits';
-import { fonts, statusColorFor } from '@/theme/tokens';
+import { fonts, moduleBrand, statusColorFor } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 export default function Field() {
@@ -29,6 +31,11 @@ export default function Field() {
   const list = tab === 'hoy' ? today : visits;
 
   const isDark = colorScheme === 'dark';
+  const accent = moduleBrand.field[isDark ? 'dark' : 'light'];
+  const doneToday = useMemo(() => today.filter((v) => v.status === 'finalizada').length, [today]);
+  const pct = today.length > 0 ? doneToday / today.length : 0;
+  const planCount = useMemo(() => today.filter((v) => v.status === 'planificada').length, [today]);
+  const curCount = useMemo(() => today.filter((v) => v.status === 'en_curso' || v.status === 'en_sitio').length, [today]);
   const points = useMemo(
     () =>
       list
@@ -53,6 +60,31 @@ export default function Field() {
           <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3 }}>Mis visitas</Text>
           <OfflinePill />
         </View>
+
+        <ModuleHero gradient={c.hero}>
+          <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, letterSpacing: 0.2, marginBottom: 15 }}>Tu día</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+                <Text style={{ fontFamily: fonts.ralewayXb, fontSize: 40, lineHeight: 40, color: c.fg, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>{doneToday}</Text>
+                <Text style={{ fontFamily: fonts.interM, fontSize: 14, color: c.fg2, paddingBottom: 4 }}>de {today.length} visitas</Text>
+              </View>
+              <Text style={{ fontFamily: fonts.interM, fontSize: 13, color: c.fg2, marginTop: 10 }}>
+                {today.length === 0 ? 'Sin visitas hoy' : today.length - doneToday > 0 ? `${today.length - doneToday} pendientes hoy` : 'Completaste tu día'}
+              </Text>
+            </View>
+            <ProgressRing size={76} stroke={9} progress={pct} trackColor={c.surface2} color={accent}>
+              <Text style={{ fontFamily: fonts.ralewayB, fontSize: 17, color: c.fg, fontVariant: ['tabular-nums'] }}>{Math.round(pct * 100)}%</Text>
+            </ProgressRing>
+          </View>
+          <View style={{ height: 1, backgroundColor: c.line, marginTop: 17, marginBottom: 15 }} />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <FieldStat label="Planificadas" value={planCount} c={c} />
+            <FieldStat label="En curso" value={curCount} c={c} />
+            <FieldStat label="Finalizadas" value={doneToday} c={c} />
+          </View>
+        </ModuleHero>
+
         {stale ? (
           <Text style={{ fontFamily: fonts.inter, fontSize: 12.5, color: c.fg3, marginBottom: 12 }}>Mostrando lo guardado · sin conexión</Text>
         ) : null}
@@ -86,6 +118,15 @@ export default function Field() {
 
 function openVisit(v: FieldVisit) {
   router.push({ pathname: '/visit/[id]', params: { id: v.id } });
+}
+
+function FieldStat({ label, value, c }: { label: string; value: number; c: ReturnType<typeof useThemeColors> }) {
+  return (
+    <View style={{ alignItems: 'center' }}>
+      <Text style={{ fontFamily: fonts.ralewayB, fontSize: 18, color: c.fg, fontVariant: ['tabular-nums'] }}>{value}</Text>
+      <Text style={{ fontFamily: fonts.interM, fontSize: 11, color: c.fg3, marginTop: 2 }}>{label}</Text>
+    </View>
+  );
 }
 
 function SegTab({ label, active, onPress, colors }: { label: string; active: boolean; onPress: () => void; colors: ReturnType<typeof useThemeColors> }) {

@@ -14,7 +14,7 @@ import { OfflinePill } from '@/components/ui/OfflinePill';
 import { orderToCard } from '@/lib/trace/map';
 import type { WorkOrder } from '@/lib/trace/types';
 import { useOrders } from '@/lib/trace/useTrace';
-import { fonts, moduleHero } from '@/theme/tokens';
+import { fonts, moduleBrand, moduleHero } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 const OPEN_STATUSES = new Set(['facturada', 'cancelada']);
@@ -23,6 +23,7 @@ const DUE_SOON_MS = 7 * 86_400_000;
 export default function Trace() {
   const c = useThemeColors();
   const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const { orders, loading, error, stale, refetch } = useOrders();
   const [query, setQuery] = useState('');
   const scrollRef = useRef<ScrollView>(null);
@@ -33,7 +34,8 @@ export default function Trace() {
     const limit = Date.now() + DUE_SOON_MS;
     return openOrders.filter((o) => o.date_due && new Date(o.date_due).getTime() <= limit).length;
   }, [openOrders]);
-  const heroGradient = moduleHero.trace[colorScheme === 'dark' ? 'dark' : 'light'];
+  const heroGradient = moduleHero.trace[isDark ? 'dark' : 'light'];
+  const accent = moduleBrand.trace[isDark ? 'dark' : 'light'];
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -66,8 +68,8 @@ export default function Trace() {
                 {dueSoonCount > 0 ? `${dueSoonCount} próximas a vencer` : 'Sin vencimientos cercanos'}
               </Text>
             </View>
-            <View style={{ width: 76, height: 76, borderRadius: 20, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="route" size={30} color={c.fg2} strokeWidth={1.8} />
+            <View style={{ width: 76, height: 76, borderRadius: 20, backgroundColor: c.surface, borderWidth: 1.5, borderColor: accent, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="route" size={30} color={accent} strokeWidth={1.8} />
             </View>
           </View>
         </ModuleHero>

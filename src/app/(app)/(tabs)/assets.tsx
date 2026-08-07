@@ -12,22 +12,24 @@ import { Icon } from '@/components/icons/Icon';
 import { ModuleHero } from '@/components/ModuleHero';
 import { OfflinePill } from '@/components/ui/OfflinePill';
 import { ProgressRing } from '@/components/ui/ProgressRing';
-import { assetToCard, healthColor } from '@/lib/assets/map';
+import { assetToCard } from '@/lib/assets/map';
 import type { Asset } from '@/lib/assets/types';
 import { useAssets } from '@/lib/assets/useAssets';
-import { brand, fonts, moduleHero } from '@/theme/tokens';
+import { brand, fonts, moduleBrand, moduleHero } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 export default function Assets() {
   const c = useThemeColors();
   const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const { assets, loading, error, stale, refetch } = useAssets();
   const [query, setQuery] = useState('');
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
 
   const avgHealth = assets.length > 0 ? Math.round(assets.reduce((s, a) => s + (a.health ?? 100), 0) / assets.length) : null;
-  const heroGradient = moduleHero.assets[colorScheme === 'dark' ? 'dark' : 'light'];
+  const heroGradient = moduleHero.assets[isDark ? 'dark' : 'light'];
+  const accent = moduleBrand.assets[isDark ? 'dark' : 'light'];
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -63,12 +65,12 @@ export default function Assets() {
               </Text>
             </View>
             {avgHealth != null ? (
-              <ProgressRing size={76} stroke={9} progress={avgHealth / 100} trackColor={c.surface2} color={healthColor(avgHealth)}>
+              <ProgressRing size={76} stroke={9} progress={avgHealth / 100} trackColor={c.surface2} color={accent}>
                 <Text style={{ fontFamily: fonts.ralewayB, fontSize: 17, color: c.fg, fontVariant: ['tabular-nums'] }}>{avgHealth}</Text>
               </ProgressRing>
             ) : (
-              <View style={{ width: 76, height: 76, borderRadius: 38, borderWidth: 2, borderColor: c.line, alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name="box" size={26} color={c.fg3} strokeWidth={1.8} />
+              <View style={{ width: 76, height: 76, borderRadius: 38, borderWidth: 2, borderColor: accent, alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="box" size={26} color={accent} strokeWidth={1.8} />
               </View>
             )}
           </View>

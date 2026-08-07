@@ -8,8 +8,8 @@ import { useThemeColors } from '@/theme/useThemeColors';
 
 /**
  * Barra inferior de Zaire Mobile (recreada del prototipo): Jornada · Field · Assets ·
- * Stock · Más, fila plana. Las tabs de módulo (field/assets/stock) se muestran solo si
- * están habilitadas (enabled_modules ∩ móvil). Trace no es tab (se llega desde "Más").
+ * Stock · Trace · Más, fila plana. Las tabs de módulo se muestran solo si están habilitadas
+ * (enabled_modules ∩ móvil) — con hasta 6 ítems, el tamaño se achica un poco (`compact`).
  * La cámara/escaneo QR es capacidad de Assets (FAB propio en esa pantalla), no vive acá.
  *
  * Tipamos las props del tab bar localmente (subset estructural de las de expo-router)
@@ -38,10 +38,11 @@ const TAB_META: Record<string, { label: string; icon: IconName }> = {
   field: { label: 'Field', icon: 'layers' },
   assets: { label: 'Assets', icon: 'box' },
   stock: { label: 'Stock', icon: 'grid' },
+  trace: { label: 'Trace', icon: 'route' },
   more: { label: 'Más', icon: 'menu' },
 };
 
-const ORDER = ['index', 'field', 'assets', 'stock', 'more'];
+const ORDER = ['index', 'field', 'assets', 'stock', 'trace', 'more'];
 
 export function ZaireTabBar({ state, navigation }: ZaireTabBarProps) {
   const c = useThemeColors();
@@ -61,10 +62,15 @@ export function ZaireTabBar({ state, navigation }: ZaireTabBarProps) {
     if (!event.defaultPrevented) navigation.navigate(route.name);
   };
 
+  // Con todos los módulos habilitados son 6 ítems — se achica un poco para que respiren.
+  const compact = items.length >= 6;
+  const iconSize = compact ? 23 : 26;
+  const labelSize = compact ? 9.5 : 10;
+
   const renderBtn = (it: TabItem) => (
     <Pressable key={it.route.key} onPress={() => go(it.route)} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-      <Icon name={it.icon} size={26} color={it.focused ? brand.orange : c.fg3} strokeWidth={it.focused ? 2.3 : 2} />
-      <Text style={{ fontFamily: fonts.interSb, fontSize: 10, letterSpacing: 0.2, color: it.focused ? brand.orange : c.fg3 }}>
+      <Icon name={it.icon} size={iconSize} color={it.focused ? brand.orange : c.fg3} strokeWidth={it.focused ? 2.3 : 2} />
+      <Text numberOfLines={1} style={{ fontFamily: fonts.interSb, fontSize: labelSize, letterSpacing: 0.2, color: it.focused ? brand.orange : c.fg3 }}>
         {it.label}
       </Text>
     </Pressable>
@@ -75,7 +81,7 @@ export function ZaireTabBar({ state, navigation }: ZaireTabBarProps) {
       style={{
         paddingTop: 8,
         paddingBottom: insets.bottom + 12,
-        paddingHorizontal: 8,
+        paddingHorizontal: compact ? 4 : 8,
         backgroundColor: c.nav,
         borderTopWidth: 1,
         borderTopColor: c.navLine,

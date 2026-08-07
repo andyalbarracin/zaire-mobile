@@ -53,23 +53,35 @@ export const brand = {
 };
 
 /**
- * Degradés "hero" por módulo — mismo lenguaje visual que `hero` (arriba: suave, casi neutro,
- * apenas tonalizado al final), no bloques de color sólido. Field sigue usando `hero` (naranja,
- * sin cambios). Trace = navy, Assets = gris/negro premium, Stock = verde premium.
+ * Degradés "hero" por módulo — MISMO formato que `hero` (arriba): arranca del mismo gris neutro
+ * y termina con un shift de color real hacia el final (igual de perceptible que el shift de
+ * `hero` de gris→peach), solo que rotado por módulo. Field sigue usando `hero` (naranja, sin
+ * cambios). Trace = navy, Assets = gris/negro premium, Stock = verde premium.
  */
 export const moduleHero = {
   trace: {
-    light: ['#E7E9EC', '#EAEDF3', '#D9E0EC'],
-    dark: ['#1B2024', '#181C24', '#111B2E'],
+    light: ['#E7E9EC', '#E3E8F2', '#C7D7F0'],
+    dark: ['#1B2024', '#181D26', '#101B38'],
   },
   assets: {
-    light: ['#E9E9EA', '#EDEDEE', '#DDDEE0'],
-    dark: ['#1B1D20', '#1A1C1F', '#121315'],
+    light: ['#E7E9EC', '#DADCDF', '#BFC1C5'],
+    dark: ['#1B2024', '#212327', '#34363B'],
   },
   stock: {
-    light: ['#E7E9EC', '#EBF0EA', '#DCE8DC'],
-    dark: ['#1B2420', '#19201C', '#0F1F16'],
+    light: ['#E7E9EC', '#E1EDE4', '#BEE1C7'],
+    dark: ['#1B2024', '#182119', '#0E2A18'],
   },
+} as const;
+
+/**
+ * Color "de marca" sólido por módulo — para íconos/anillos/acentos que deben leerse como ESE
+ * módulo (mini-branding), no como un semáforo de estado/salud. Field usa el naranja de siempre.
+ */
+export const moduleBrand = {
+  field: { light: '#F26A21', dark: '#F26A21' },
+  trace: { light: '#2A4D8C', dark: '#6E96D6' },
+  assets: { light: '#4B4F56', dark: '#B7BABF' },
+  stock: { light: '#1F6B45', dark: '#57A576' },
 } as const;
 
 /** Estados (color + etiqueta) — semáforo desaturado (dignidad industrial). */

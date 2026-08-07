@@ -16,7 +16,8 @@ import { useFontSize } from '@/lib/fontScale';
 import { useLock } from '@/lib/lock';
 import { MODULE_META, type ModuleId } from '@/lib/modules';
 import { ROLE_LABELS } from '@/lib/types';
-import { brand, fonts } from '@/theme/tokens';
+import { tint } from '@/theme/color';
+import { brand, fonts, moduleBrand } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 const MODULE_ROUTE: Record<ModuleId, Href> = {
@@ -172,7 +173,9 @@ export default function More() {
 
 function ModuleTile({ module }: { module: ModuleId }) {
   const c = useThemeColors();
+  const { colorScheme } = useColorScheme();
   const meta = MODULE_META[module];
+  const accent = module in moduleBrand ? moduleBrand[module as keyof typeof moduleBrand][colorScheme === 'dark' ? 'dark' : 'light'] : c.fg;
   return (
     <Pressable onPress={() => router.navigate(MODULE_ROUTE[module])} style={{ width: '48%' }}>
       <FolderSurface
@@ -182,8 +185,8 @@ function ModuleTile({ module }: { module: ModuleId }) {
         border={c.line}
         contentStyle={{ padding: 15, gap: 11 }}
       >
-        <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: c.tile, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name={meta.icon as IconName} size={22} color={c.fg} strokeWidth={2} />
+        <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: tint(accent, colorScheme === 'dark' ? 0.2 : 0.13), alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name={meta.icon as IconName} size={22} color={accent} strokeWidth={2} />
         </View>
         <View>
           <Text style={{ fontFamily: fonts.interSb, fontSize: 14.5, color: c.fg }}>{meta.label}</Text>
