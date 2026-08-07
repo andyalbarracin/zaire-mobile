@@ -7,6 +7,7 @@ import { FolderSurface } from '@/components/FolderSurface';
 import { Icon } from '@/components/icons/Icon';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { OfflinePill } from '@/components/ui/OfflinePill';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import {
   ASSET_STATUS_LABELS,
@@ -100,6 +101,15 @@ export default function AssetDetail() {
               </View>
             </View>
           </FolderSurface>
+
+          {/* CTA: registrar novedad (misma pantalla que el escaneo de QR) */}
+          <View style={{ marginTop: 14 }}>
+            <PrimaryButton
+              label="Registrar novedad"
+              iconRight="arrowRight"
+              onPress={() => router.push({ pathname: '/asset/[id]/novedad', params: { id: asset.id } })}
+            />
+          </View>
 
           {/* Ficha técnica */}
           <Section title="Ficha técnica" c={c}>

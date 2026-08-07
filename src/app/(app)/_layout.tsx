@@ -14,6 +14,8 @@ export default function AppLayout() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="visit/[id]" />
       <Stack.Screen name="asset/[id]" />
+      <Stack.Screen name="asset/[id]/novedad" />
+      <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
     </Stack>
   );
 }

@@ -46,6 +46,13 @@
         {
           "cameraPermission": "Zaire Mobile usa la cámara para tomar fotos de la visita."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Zaire Mobile usa la cámara para escanear el QR de los equipos.",
+          "recordAudioAndroid": false
+        }
       ]
     ],
     "experiments": {

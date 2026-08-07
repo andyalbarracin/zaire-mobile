@@ -1,4 +1,5 @@
-import { Alert, Pressable, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, type IconName } from '@/components/icons/Icon';
@@ -89,7 +90,7 @@ export function ZaireTabBar({ state, navigation }: ZaireTabBarProps) {
       {left.map(renderBtn)}
       <View style={{ flex: 1, alignItems: 'center' }}>
         <Pressable
-          onPress={() => Alert.alert('Cámara', 'Disponible próximamente.')}
+          onPress={() => router.navigate('/scan')}
           style={{
             width: 58,
             height: 58,

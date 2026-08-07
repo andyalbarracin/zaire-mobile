@@ -80,12 +80,13 @@ export default function Home() {
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <View style={{ position: 'absolute', left: 0, right: 0, alignItems: 'center' }} pointerEvents="none">
-            <Image source={colorScheme === 'dark' ? isoWhite : isoNavy} style={{ width: 30, height: 30, resizeMode: 'contain' }} />
+            <Image source={colorScheme === 'dark' ? isoWhite : isoNavy} style={{ width: 22, height: 22, resizeMode: 'contain' }} />
           </View>
-          <Pressable onPress={() => router.navigate('/more')}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, paddingHorizontal: 13, borderRadius: 21, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface }}>
+          {/* maxWidth 42% garantiza que el pill nunca alcance el isologo centrado; el nombre se elide */}
+          <Pressable onPress={() => router.navigate('/more')} style={{ maxWidth: '42%' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, paddingHorizontal: 13, borderRadius: 21, borderWidth: 1, borderColor: c.line, backgroundColor: c.surface, flexShrink: 1 }}>
               <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: isOnline ? '#3EBE6A' : '#8B93A3' }} />
-              <Text numberOfLines={1} style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg, maxWidth: 100 }}>{companyName || 'Empresa Z'}</Text>
+              <Text numberOfLines={1} style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg, flexShrink: 1 }}>{companyName || 'Empresa Z'}</Text>
             </View>
           </Pressable>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
