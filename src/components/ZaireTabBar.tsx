@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,8 +8,9 @@ import { useThemeColors } from '@/theme/useThemeColors';
 
 /**
  * Barra inferior de Zaire Mobile (recreada del prototipo): Jornada · Field · Assets ·
- * Stock · Más, con un FAB de cámara central. Las tabs de módulo (field/assets/stock)
- * se muestran solo si están habilitadas (enabled_modules ∩ móvil). Trace no es tab.
+ * Stock · Más, fila plana. Las tabs de módulo (field/assets/stock) se muestran solo si
+ * están habilitadas (enabled_modules ∩ móvil). Trace no es tab (se llega desde "Más").
+ * La cámara/escaneo QR es capacidad de Assets (FAB propio en esa pantalla), no vive acá.
  *
  * Tipamos las props del tab bar localmente (subset estructural de las de expo-router)
  * para no depender de @react-navigation/bottom-tabs.
@@ -56,10 +56,6 @@ export function ZaireTabBar({ state, navigation }: ZaireTabBarProps) {
     .filter((r): r is TabRoute => Boolean(r))
     .map((route) => ({ route, focused: route.key === activeKey, ...TAB_META[route.name] }));
 
-  const mid = Math.ceil(items.length / 2);
-  const left = items.slice(0, mid);
-  const right = items.slice(mid);
-
   const go = (route: TabRoute) => {
     const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
     if (!event.defaultPrevented) navigation.navigate(route.name);
@@ -87,31 +83,7 @@ export function ZaireTabBar({ state, navigation }: ZaireTabBarProps) {
         alignItems: 'center',
       }}
     >
-      {left.map(renderBtn)}
-      <View style={{ flex: 1, alignItems: 'center' }}>
-        <Pressable
-          onPress={() => router.navigate('/scan')}
-          style={{
-            width: 58,
-            height: 58,
-            marginTop: -26,
-            borderRadius: 29,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: brand.navy,
-            borderWidth: 4,
-            borderColor: c.nav,
-            shadowColor: '#0E1522',
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.5,
-            shadowRadius: 12,
-            elevation: 6,
-          }}
-        >
-          <Icon name="camera" size={26} color="#fff" strokeWidth={2} />
-        </Pressable>
-      </View>
-      {right.map(renderBtn)}
+      {items.map(renderBtn)}
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import { useScrollToTop } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -74,9 +74,15 @@ export default function Assets() {
         )}
       </ScrollView>
 
-      {/* FAB: nuevo equipo (alta manual) */}
+      {/* FAB: nuevo equipo — escanear QR o cargar manual (la cámara vive acá, no en el navbar) */}
       <Pressable
-        onPress={() => router.navigate('/asset/nuevo')}
+        onPress={() =>
+          Alert.alert('Nuevo equipo', '¿Cómo querés cargarlo?', [
+            { text: 'Escanear QR', onPress: () => router.navigate('/scan') },
+            { text: 'Cargar manual', onPress: () => router.navigate('/asset/nuevo') },
+            { text: 'Cancelar', style: 'cancel' },
+          ])
+        }
         style={{ position: 'absolute', right: 20, bottom: 22, width: 56, height: 56, borderRadius: 28, backgroundColor: brand.orange, alignItems: 'center', justifyContent: 'center', shadowColor: '#0E1522', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.32, shadowRadius: 12, elevation: 6 }}
       >
         <Icon name="plus" size={26} color="#fff" strokeWidth={2.4} />
