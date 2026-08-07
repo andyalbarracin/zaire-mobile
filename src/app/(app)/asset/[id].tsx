@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useColorScheme } from 'nativewind';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FolderSurface } from '@/components/FolderSurface';
@@ -18,8 +19,11 @@ import {
   EVENT_TYPE_LABELS,
   healthColor,
 } from '@/lib/assets/map';
+import { signAssetPhotos } from '@/lib/assets/photos';
 import type { AssetEvent, EventType } from '@/lib/assets/types';
 import { useAsset } from '@/lib/assets/useAssets';
+import { useConnectivity } from '@/lib/connectivity';
+import { useTenant } from '@/lib/tenant';
 import { tint } from '@/theme/color';
 import { fonts, statusColorFor } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
@@ -49,8 +53,32 @@ export default function AssetDetail() {
   const isDark = colorScheme === 'dark';
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, loading, error, stale, refetch } = useAsset(id);
+  const { supabase } = useTenant();
+  const { isOnline } = useConnectivity();
 
   const asset = data?.asset ?? null;
+  const photoDocs = useMemo(() => (data?.documents ?? []).filter((d) => d.doc_type === 'foto'), [data]);
+  const otherDocs = useMemo(() => (data?.documents ?? []).filter((d) => d.doc_type !== 'foto'), [data]);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const photoKey = photoDocs.map((d) => d.file_path).join(',');
+
+  // El bucket es privado → firmamos URLs temporales al ver la ficha (no se cachean: expiran).
+  useEffect(() => {
+    if (!isOnline || photoDocs.length === 0) return;
+    let alive = true;
+    signAssetPhotos(
+      supabase,
+      photoDocs.map((d) => d.file_path),
+    )
+      .then((m) => {
+        if (alive) setPhotoUrls(m);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, isOnline, photoKey]);
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
@@ -133,16 +161,37 @@ export default function AssetDetail() {
             )}
           </Section>
 
-          {/* Documentos */}
-          {data && data.documents.length > 0 ? (
-            <Section title={`Documentos · ${data.documents.length}`} c={c}>
-              {data.documents.map((d, i) => (
+          {/* Fotos (miniaturas del bucket privado vía signed URL) */}
+          {photoDocs.length > 0 ? (
+            <View style={{ marginTop: 22 }}>
+              <Text style={{ fontFamily: fonts.ralewayB, fontSize: 16, color: c.fg, marginBottom: 10 }}>Fotos · {photoDocs.length}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                {photoDocs.map((d) => {
+                  const url = photoUrls[d.file_path];
+                  return (
+                    <View key={d.id} style={{ width: 116, height: 116, borderRadius: 14, overflow: 'hidden', backgroundColor: c.surface2, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center' }}>
+                      {url ? (
+                        <Image source={{ uri: url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                      ) : (
+                        <Icon name="camera" size={22} color={c.fg3} strokeWidth={1.8} />
+                      )}
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          ) : null}
+
+          {/* Documentos (sin fotos) */}
+          {otherDocs.length > 0 ? (
+            <Section title={`Documentos · ${otherDocs.length}`} c={c}>
+              {otherDocs.map((d, i) => (
                 <Row
                   key={d.id}
                   label={d.name ?? d.doc_type ?? 'Documento'}
                   value={d.expires_at ? `vence ${fmtDate(d.expires_at)}` : '—'}
                   c={c}
-                  last={i === data.documents.length - 1}
+                  last={i === otherDocs.length - 1}
                 />
               ))}
             </Section>

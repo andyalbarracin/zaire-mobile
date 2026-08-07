@@ -29,3 +29,17 @@ export async function uploadAssetPhoto(
   });
   if (error) throw error;
 }
+
+/**
+ * Firma URLs temporales (bucket privado) para mostrar miniaturas en la ficha. Devuelve un mapa
+ * `file_path → signedUrl`. Se resuelve en el cliente al ver la ficha (no se cachea: expiran).
+ */
+export async function signAssetPhotos(sb: SupabaseClient, paths: string[]): Promise<Record<string, string>> {
+  if (paths.length === 0) return {};
+  const { data } = await sb.storage.from(BUCKET).createSignedUrls(paths, 3600);
+  const map: Record<string, string> = {};
+  for (const r of (data ?? []) as { path: string | null; signedUrl: string }[]) {
+    if (r.path && r.signedUrl) map[r.path] = r.signedUrl;
+  }
+  return map;
+}
