@@ -1,5 +1,6 @@
 import { useScrollToTop } from '@react-navigation/native';
 import { router } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -8,19 +9,31 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FolderCard } from '@/components/FolderCard';
 import { folderPath } from '@/components/folderShape';
 import { Icon } from '@/components/icons/Icon';
+import { ModuleHero } from '@/components/ModuleHero';
 import { OfflinePill } from '@/components/ui/OfflinePill';
 import { orderToCard } from '@/lib/trace/map';
 import type { WorkOrder } from '@/lib/trace/types';
 import { useOrders } from '@/lib/trace/useTrace';
-import { fonts } from '@/theme/tokens';
+import { fonts, moduleHero } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
+
+const OPEN_STATUSES = new Set(['facturada', 'cancelada']);
+const DUE_SOON_MS = 7 * 86_400_000;
 
 export default function Trace() {
   const c = useThemeColors();
+  const { colorScheme } = useColorScheme();
   const { orders, loading, error, stale, refetch } = useOrders();
   const [query, setQuery] = useState('');
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
+
+  const openOrders = useMemo(() => orders.filter((o) => !OPEN_STATUSES.has(o.status)), [orders]);
+  const dueSoonCount = useMemo(() => {
+    const limit = Date.now() + DUE_SOON_MS;
+    return openOrders.filter((o) => o.date_due && new Date(o.date_due).getTime() <= limit).length;
+  }, [openOrders]);
+  const heroGradient = moduleHero.trace[colorScheme === 'dark' ? 'dark' : 'light'];
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -40,6 +53,25 @@ export default function Trace() {
           <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3 }}>Trace</Text>
           <OfflinePill />
         </View>
+
+        <ModuleHero gradient={heroGradient}>
+          <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, letterSpacing: 0.2, marginBottom: 15 }}>Órdenes</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+                <Text style={{ fontFamily: fonts.ralewayXb, fontSize: 40, lineHeight: 40, color: c.fg, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>{openOrders.length}</Text>
+                <Text style={{ fontFamily: fonts.interM, fontSize: 14, color: c.fg2, paddingBottom: 4 }}>abiertas</Text>
+              </View>
+              <Text style={{ fontFamily: fonts.interM, fontSize: 13, color: c.fg2, marginTop: 10 }}>
+                {dueSoonCount > 0 ? `${dueSoonCount} próximas a vencer` : 'Sin vencimientos cercanos'}
+              </Text>
+            </View>
+            <View style={{ width: 76, height: 76, borderRadius: 20, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="route" size={30} color={c.fg2} strokeWidth={1.8} />
+            </View>
+          </View>
+        </ModuleHero>
+
         {stale ? (
           <Text style={{ fontFamily: fonts.inter, fontSize: 12.5, color: c.fg3, marginBottom: 12 }}>Mostrando lo guardado · sin conexión</Text>
         ) : null}

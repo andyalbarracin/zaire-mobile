@@ -52,12 +52,24 @@ export const brand = {
   white: '#FFFFFF',
 };
 
-/** Acentos por módulo (navy-family, sutiles). La ACCIÓN sigue siendo naranja en todos. */
-export const moduleAccents = {
-  field: { light: { accent: '#1B2A44', soft: '#E7E9EF' }, dark: { accent: '#7E8BA6', soft: '#212E48' } },
-  assets: { light: { accent: '#2E4A6B', soft: '#E4E9F0' }, dark: { accent: '#8AA0BE', soft: '#1E2C44' } },
-  stock: { light: { accent: '#7A2E3A', soft: '#F0E4E4' }, dark: { accent: '#C57883', soft: '#2C1B22' } },
-  trace: { light: { accent: '#3F5140', soft: '#E6EAE3' }, dark: { accent: '#8FA588', soft: '#1E2A22' } },
+/**
+ * Degradés "hero" por módulo — mismo lenguaje visual que `hero` (arriba: suave, casi neutro,
+ * apenas tonalizado al final), no bloques de color sólido. Field sigue usando `hero` (naranja,
+ * sin cambios). Trace = navy, Assets = gris/negro premium, Stock = verde premium.
+ */
+export const moduleHero = {
+  trace: {
+    light: ['#E7E9EC', '#EAEDF3', '#D9E0EC'],
+    dark: ['#1B2024', '#181C24', '#111B2E'],
+  },
+  assets: {
+    light: ['#E9E9EA', '#EDEDEE', '#DDDEE0'],
+    dark: ['#1B1D20', '#1A1C1F', '#121315'],
+  },
+  stock: {
+    light: ['#E7E9EC', '#EBF0EA', '#DCE8DC'],
+    dark: ['#1B2420', '#19201C', '#0F1F16'],
+  },
 } as const;
 
 /** Estados (color + etiqueta) — semáforo desaturado (dignidad industrial). */

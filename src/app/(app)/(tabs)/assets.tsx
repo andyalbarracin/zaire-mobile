@@ -1,5 +1,6 @@
 import { useScrollToTop } from '@react-navigation/native';
 import { router } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -8,19 +9,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FolderCard } from '@/components/FolderCard';
 import { folderPath } from '@/components/folderShape';
 import { Icon } from '@/components/icons/Icon';
+import { ModuleHero } from '@/components/ModuleHero';
 import { OfflinePill } from '@/components/ui/OfflinePill';
-import { assetToCard } from '@/lib/assets/map';
+import { ProgressRing } from '@/components/ui/ProgressRing';
+import { assetToCard, healthColor } from '@/lib/assets/map';
 import type { Asset } from '@/lib/assets/types';
 import { useAssets } from '@/lib/assets/useAssets';
-import { brand, fonts } from '@/theme/tokens';
+import { brand, fonts, moduleHero } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 export default function Assets() {
   const c = useThemeColors();
+  const { colorScheme } = useColorScheme();
   const { assets, loading, error, stale, refetch } = useAssets();
   const [query, setQuery] = useState('');
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
+
+  const avgHealth = assets.length > 0 ? Math.round(assets.reduce((s, a) => s + (a.health ?? 100), 0) / assets.length) : null;
+  const heroGradient = moduleHero.assets[colorScheme === 'dark' ? 'dark' : 'light'];
 
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -42,6 +49,31 @@ export default function Assets() {
           <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3 }}>Equipos</Text>
           <OfflinePill />
         </View>
+
+        <ModuleHero gradient={heroGradient}>
+          <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, letterSpacing: 0.2, marginBottom: 15 }}>Tu flota</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+                <Text style={{ fontFamily: fonts.ralewayXb, fontSize: 40, lineHeight: 40, color: c.fg, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>{assets.length}</Text>
+                <Text style={{ fontFamily: fonts.interM, fontSize: 14, color: c.fg2, paddingBottom: 4 }}>{assets.length === 1 ? 'equipo' : 'equipos'}</Text>
+              </View>
+              <Text style={{ fontFamily: fonts.interM, fontSize: 13, color: c.fg2, marginTop: 10 }}>
+                {avgHealth != null ? `Salud promedio ${avgHealth}%` : 'Sin datos de salud todavía'}
+              </Text>
+            </View>
+            {avgHealth != null ? (
+              <ProgressRing size={76} stroke={9} progress={avgHealth / 100} trackColor={c.surface2} color={healthColor(avgHealth)}>
+                <Text style={{ fontFamily: fonts.ralewayB, fontSize: 17, color: c.fg, fontVariant: ['tabular-nums'] }}>{avgHealth}</Text>
+              </ProgressRing>
+            ) : (
+              <View style={{ width: 76, height: 76, borderRadius: 38, borderWidth: 2, borderColor: c.line, alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="box" size={26} color={c.fg3} strokeWidth={1.8} />
+              </View>
+            )}
+          </View>
+        </ModuleHero>
+
         {stale ? (
           <Text style={{ fontFamily: fonts.inter, fontSize: 12.5, color: c.fg3, marginBottom: 12 }}>Mostrando lo guardado · sin conexión</Text>
         ) : null}

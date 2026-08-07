@@ -1,5 +1,6 @@
 import { useScrollToTop } from '@react-navigation/native';
 import { router } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -8,21 +9,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FolderCard } from '@/components/FolderCard';
 import { folderPath } from '@/components/folderShape';
 import { Icon } from '@/components/icons/Icon';
+import { ModuleHero } from '@/components/ModuleHero';
 import { OfflinePill } from '@/components/ui/OfflinePill';
 import { groupByProduct, productToCard } from '@/lib/stock/map';
 import type { ProductStockSummary } from '@/lib/stock/types';
 import { useStockLevels } from '@/lib/stock/useStock';
-import { fonts } from '@/theme/tokens';
+import { fonts, moduleHero } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 export default function Stock() {
   const c = useThemeColors();
+  const { colorScheme } = useColorScheme();
   const { levels, loading, error, stale, refetch } = useStockLevels();
   const [query, setQuery] = useState('');
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
 
   const products = useMemo(() => groupByProduct(levels), [levels]);
+  const lowCount = useMemo(() => products.filter((p) => p.light !== 'green').length, [products]);
+  const totalValue = useMemo(() => levels.reduce((s, l) => s + l.on_hand * l.avg_cost, 0), [levels]);
+  const heroGradient = moduleHero.stock[colorScheme === 'dark' ? 'dark' : 'light'];
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return products;
@@ -41,6 +47,28 @@ export default function Stock() {
           <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3 }}>Stock</Text>
           <OfflinePill />
         </View>
+
+        <ModuleHero gradient={heroGradient}>
+          <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, letterSpacing: 0.2, marginBottom: 15 }}>Estado del stock</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+                <Text style={{ fontFamily: fonts.ralewayXb, fontSize: 40, lineHeight: 40, color: c.fg, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>{products.length}</Text>
+                <Text style={{ fontFamily: fonts.interM, fontSize: 14, color: c.fg2, paddingBottom: 4 }}>productos</Text>
+              </View>
+              <Text style={{ fontFamily: fonts.interM, fontSize: 13, color: c.fg2, marginTop: 10 }}>
+                {lowCount > 0 ? `${lowCount} bajo mínimo` : 'Todo dentro de rango'}
+              </Text>
+            </View>
+            <View style={{ backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.line, paddingVertical: 12, paddingHorizontal: 15, alignItems: 'flex-end' }}>
+              <Text style={{ fontFamily: fonts.interSb, fontSize: 10.5, color: c.fg3, letterSpacing: 0.3 }}>VALOR TOTAL</Text>
+              <Text numberOfLines={1} style={{ fontFamily: fonts.ralewayB, fontSize: 17, color: c.fg, marginTop: 3 }}>
+                ${totalValue.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+              </Text>
+            </View>
+          </View>
+        </ModuleHero>
+
         {stale ? (
           <Text style={{ fontFamily: fonts.inter, fontSize: 12.5, color: c.fg3, marginBottom: 12 }}>Mostrando lo guardado · sin conexión</Text>
         ) : null}
