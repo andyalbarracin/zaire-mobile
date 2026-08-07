@@ -18,6 +18,7 @@ export default function AppLayout() {
       <Stack.Screen name="asset/nuevo" />
       <Stack.Screen name="stock/producto/[id]" />
       <Stack.Screen name="stock/producto/[id]/movimiento" />
+      <Stack.Screen name="trace/orden/[id]" />
       <Stack.Screen name="soporte" />
       <Stack.Screen name="perfil" />
       <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
