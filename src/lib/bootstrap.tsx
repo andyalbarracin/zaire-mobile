@@ -14,6 +14,7 @@ interface BootstrapData {
 
 interface BootstrapContextValue extends BootstrapData {
   loading: boolean;
+  updateProfileName: (name: string) => void;
 }
 
 const BootstrapContext = createContext<BootstrapContextValue | null>(null);
@@ -33,6 +34,10 @@ export function BootstrapProvider({ children }: { children: ReactNode }) {
     modules: getEnabledMobileModules(),
   });
   const [loading, setLoading] = useState(false);
+
+  // Refleja localmente el nombre a mostrar tras editarlo (evita recargar todo el bootstrap).
+  const updateProfileName = (name: string) =>
+    setData((d) => ({ ...d, profile: d.profile ? { ...d.profile, full_name: name } : d.profile }));
 
   const userId = session?.user?.id;
 
@@ -74,7 +79,7 @@ export function BootstrapProvider({ children }: { children: ReactNode }) {
     };
   }, [userId, supabase, tenant.name]);
 
-  return <BootstrapContext.Provider value={{ ...data, loading }}>{children}</BootstrapContext.Provider>;
+  return <BootstrapContext.Provider value={{ ...data, loading, updateProfileName }}>{children}</BootstrapContext.Provider>;
 }
 
 export function useBootstrap(): BootstrapContextValue {

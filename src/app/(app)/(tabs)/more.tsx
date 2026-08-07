@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { useBootstrap } from '@/lib/bootstrap';
 import { isBiometricAvailable } from '@/lib/biometrics';
 import { useConnectivity } from '@/lib/connectivity';
+import { useFontSize } from '@/lib/fontScale';
 import { useLock } from '@/lib/lock';
 import { MODULE_META, type ModuleId } from '@/lib/modules';
 import { ROLE_LABELS } from '@/lib/types';
@@ -32,6 +33,7 @@ export default function More() {
   const { signOut } = useAuth();
   const { profile, role, companyName, modules } = useBootstrap();
   const { forceOffline, setForceOffline } = useConnectivity();
+  const { size, setSize } = useFontSize();
   const lock = useLock();
   const [bioAvail, setBioAvail] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -48,8 +50,9 @@ export default function More() {
       <ScrollView ref={scrollRef} contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
         <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3, marginBottom: 18 }}>Más</Text>
 
-        {/* Perfil (datos reales del bootstrap) */}
-        <View
+        {/* Perfil (datos reales del bootstrap) — toca para editar tus datos personales */}
+        <Pressable
+          onPress={() => router.navigate('/perfil')}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -71,7 +74,8 @@ export default function More() {
               {ROLE_LABELS[role]} · {companyName}
             </Text>
           </View>
-        </View>
+          <Icon name="chevronRight" size={19} color={c.fg3} strokeWidth={2.2} />
+        </Pressable>
 
         {/* Módulos habilitados */}
         <Eyebrow color={c.fg2}>MÓDULOS</Eyebrow>
@@ -92,6 +96,12 @@ export default function More() {
         <View style={{ backgroundColor: c.surface, borderRadius: 16, borderWidth: 1, borderColor: c.line, overflow: 'hidden', marginBottom: 22 }}>
           <PrefRow icon="moon" label="Modo oscuro" divider>
             <Switch value={colorScheme === 'dark'} onValueChange={toggleColorScheme} trackColor={{ true: brand.orange, false: '#CBD0D8' }} />
+          </PrefRow>
+          <PrefRow icon="textSize" label="Tamaño de texto" divider>
+            <View style={{ flexDirection: 'row', gap: 4, backgroundColor: c.surface2, borderRadius: 10, padding: 3 }}>
+              <SizePill active={size === 'normal'} onPress={() => setSize('normal')} size={13} colors={c} />
+              <SizePill active={size === 'grande'} onPress={() => setSize('grande')} size={17} colors={c} />
+            </View>
           </PrefRow>
           <PrefRow icon="wifiOff" label="Modo offline" divider>
             <Switch
@@ -123,7 +133,6 @@ export default function More() {
 
         {/* Soporte */}
         <View style={{ marginTop: 26 }}>
-          <Eyebrow color={c.fg2}>SOPORTE</Eyebrow>
           <Pressable
             onPress={() => router.navigate('/soporte')}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.line, paddingHorizontal: 16, paddingVertical: 15 }}
@@ -132,7 +141,7 @@ export default function More() {
               <Icon name="doc" size={18} color={c.fg} strokeWidth={2} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg }}>Cargar incidencia</Text>
+              <Text style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg }}>Soporte · Cargar incidencia</Text>
               <Text style={{ fontFamily: fonts.inter, fontSize: 12, color: c.fg3, marginTop: 1 }}>Reportá un problema con la app</Text>
             </View>
             <Icon name="chevronRight" size={18} color={c.fg3} strokeWidth={2.2} />

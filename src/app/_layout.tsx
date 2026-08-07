@@ -23,6 +23,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { BootstrapProvider } from '@/lib/bootstrap';
 import { ConnectivityProvider } from '@/lib/connectivity';
+import { FontScaleProvider } from '@/lib/fontScale';
 import { LockOverlay, LockProvider } from '@/lib/lock';
 import { SyncProvider } from '@/lib/sync/SyncProvider';
 import { TenantProvider } from '@/lib/tenant';
@@ -61,6 +62,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
+        <FontScaleProvider>
         <ConnectivityProvider>
           <TenantProvider>
             <AuthProvider>
@@ -75,6 +77,7 @@ export default function RootLayout() {
             </AuthProvider>
           </TenantProvider>
         </ConnectivityProvider>
+        </FontScaleProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

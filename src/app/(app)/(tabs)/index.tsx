@@ -10,6 +10,7 @@ const isoWhite = require('../../../../assets/brand/lockup-white.png');
 
 import { FolderCard } from '@/components/FolderCard';
 import { FolderSurface } from '@/components/FolderSurface';
+import { ModuleStack } from '@/components/ModuleStack';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { OfflinePill } from '@/components/ui/OfflinePill';
 import { ProgressRing } from '@/components/ui/ProgressRing';
@@ -36,6 +37,16 @@ const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const shortDate = (d: Date) => `${DIAS[d.getDay()]} · ${d.getDate()} ${MESES[d.getMonth()]}`;
 
+const WEEK_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+/** Lunes 00:00 de la semana de `d`. */
+function startOfWeek(d: Date): Date {
+  const x = new Date(d);
+  const day = (x.getDay() + 6) % 7; // lunes = 0
+  x.setHours(0, 0, 0, 0);
+  x.setDate(x.getDate() - day);
+  return x;
+}
+
 /** Saludo según el horario (convenciones AR). */
 function greetingWord(): string {
   const h = new Date().getHours();
@@ -56,7 +67,7 @@ function workspaceInitial(name: string): string {
 
 export default function Home() {
   const c = useThemeColors();
-  const { profile, role, companyName } = useBootstrap();
+  const { profile, role, companyName, modules } = useBootstrap();
   const { visits } = useMyVisits();
   const { isOnline } = useConnectivity();
   const { colorScheme } = useColorScheme();
@@ -73,6 +84,31 @@ export default function Home() {
   const total = shown.length;
   const done = shown.filter((v) => v.status === 'finalizada').length;
   const pct = total ? done / total : 0;
+
+  // Gamificación: datos reales de la semana (visitas finalizadas por día). Si no hay actividad
+  // esta semana, se muestra el ejemplo hasta que existan datos con fechas actuales.
+  const weekStart = startOfWeek(new Date());
+  const weekEnd = new Date(weekStart.getTime() + 7 * 86_400_000);
+  const finalizadasWeek = visits.filter((v) => {
+    if (v.status !== 'finalizada') return false;
+    const iso = v.ended_at ?? v.scheduled_at;
+    if (!iso) return false;
+    const d = new Date(iso);
+    return d >= weekStart && d < weekEnd;
+  });
+  const realWeek = WEEK_LABELS.map((label, i) => {
+    const dayStart = new Date(weekStart.getTime() + i * 86_400_000);
+    const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+    const dayDone = finalizadasWeek.some((v) => {
+      const d = new Date((v.ended_at ?? v.scheduled_at) as string);
+      return d >= dayStart && d < dayEnd;
+    });
+    return { d: label, done: dayDone };
+  });
+  const realPts = finalizadasWeek.length * 25;
+  const useReal = realPts > 0;
+  const weekData = useReal ? realWeek : WEEK;
+  const weekPts = useReal ? realPts : 206;
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
@@ -134,10 +170,10 @@ export default function Home() {
           <View style={{ height: 1, backgroundColor: c.line, marginTop: 17, marginBottom: 15 }} />
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 }}>
             <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg }}>Puntos de la semana</Text>
-            <Text style={{ fontFamily: fonts.interB, fontSize: 14, color: brand.orange, fontVariant: ['tabular-nums'] }}>206 pts</Text>
+            <Text style={{ fontFamily: fonts.interB, fontSize: 14, color: brand.orange, fontVariant: ['tabular-nums'] }}>{weekPts} pts</Text>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            {WEEK.map((w, i) => (
+            {weekData.map((w, i) => (
               <View key={i} style={{ alignItems: 'center', gap: 7 }}>
                 <Text style={{ fontFamily: fonts.interSb, fontSize: 10, letterSpacing: 0.3, color: w.done ? brand.orange : c.fg3 }}>{w.d}</Text>
                 <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: w.done ? brand.orange : 'transparent', borderWidth: w.done ? 0 : 1.5, borderColor: c.fg3 }} />
@@ -146,6 +182,14 @@ export default function Home() {
           </View>
         </FolderSurface>
         </Pressable>
+
+        {/* Archivero de módulos (swipe para cambiar, tap para entrar) */}
+        {modules.length > 1 ? (
+          <>
+            <Text style={{ fontFamily: fonts.interSb, fontSize: 12.5, color: c.fg2, letterSpacing: 0.3, marginBottom: 12 }}>TUS MÓDULOS</Text>
+            <ModuleStack modules={modules} fieldStat={`${done} de ${total} visitas`} />
+          </>
+        ) : null}
 
         {/* Visitas de hoy (reales) */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 }}>

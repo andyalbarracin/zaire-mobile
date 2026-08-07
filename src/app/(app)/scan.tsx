@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icons/Icon';
@@ -30,7 +30,16 @@ export default function Scan() {
     if (handled.current) return;
     const target = resolveScan(data);
     if (!target) {
-      setError('QR no reconocido. Escaneá la etiqueta de un equipo Zaire.');
+      // QR desconocido → ofrecemos dar de alta un equipo nuevo con ese código (queda como tag).
+      handled.current = true;
+      Alert.alert(
+        'QR no reconocido',
+        'No corresponde a un equipo Zaire. ¿Querés registrar un equipo nuevo con este código?',
+        [
+          { text: 'Cancelar', style: 'cancel', onPress: () => (handled.current = false) },
+          { text: 'Registrar', onPress: () => router.replace({ pathname: '/asset/nuevo', params: { code: data } }) },
+        ],
+      );
       return;
     }
     setError(null);
@@ -95,6 +104,17 @@ export default function Scan() {
           >
             <Icon name="gauge" size={19} color="#fff" strokeWidth={2} />
             <Text style={{ fontFamily: fonts.interSb, fontSize: 15, color: '#fff' }}>Simular escaneo de QR</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              handled.current = true;
+              router.replace('/asset/nuevo');
+            }}
+            hitSlop={8}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 8 }}
+          >
+            <Icon name="plus" size={17} color="rgba(255,255,255,0.85)" strokeWidth={2.4} />
+            <Text style={{ fontFamily: fonts.interSb, fontSize: 14, color: 'rgba(255,255,255,0.85)' }}>Registrar activo nuevo</Text>
           </Pressable>
         </View>
       </SafeAreaView>

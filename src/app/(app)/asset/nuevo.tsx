@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,9 +24,10 @@ export default function NuevoAsset() {
   const { supabase } = useTenant();
   const { session } = useAuth();
   const { isOnline } = useConnectivity();
+  const { code } = useLocalSearchParams<{ code?: string }>();
 
   const [name, setName] = useState('');
-  const [tag, setTag] = useState('');
+  const [tag, setTag] = useState(code ?? '');
   const [type, setType] = useState<AssetType | null>(null);
   const [brandTxt, setBrandTxt] = useState('');
   const [model, setModel] = useState('');

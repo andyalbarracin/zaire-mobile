@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FolderSurface } from '@/components/FolderSurface';
@@ -60,6 +60,7 @@ export default function AssetDetail() {
   const photoDocs = useMemo(() => (data?.documents ?? []).filter((d) => d.doc_type === 'foto'), [data]);
   const otherDocs = useMemo(() => (data?.documents ?? []).filter((d) => d.doc_type !== 'foto'), [data]);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [viewer, setViewer] = useState<string | null>(null);
   const photoKey = photoDocs.map((d) => d.file_path).join(',');
 
   // El bucket es privado → firmamos URLs temporales al ver la ficha (no se cachean: expiran).
@@ -169,13 +170,17 @@ export default function AssetDetail() {
                 {photoDocs.map((d) => {
                   const url = photoUrls[d.file_path];
                   return (
-                    <View key={d.id} style={{ width: 116, height: 116, borderRadius: 14, overflow: 'hidden', backgroundColor: c.surface2, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center' }}>
+                    <Pressable
+                      key={d.id}
+                      onPress={() => url && setViewer(url)}
+                      style={{ width: 116, height: 116, borderRadius: 14, overflow: 'hidden', backgroundColor: c.surface2, borderWidth: 1, borderColor: c.line, alignItems: 'center', justifyContent: 'center' }}
+                    >
                       {url ? (
                         <Image source={{ uri: url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                       ) : (
                         <Icon name="camera" size={22} color={c.fg3} strokeWidth={1.8} />
                       )}
-                    </View>
+                    </Pressable>
                   );
                 })}
               </ScrollView>
@@ -213,7 +218,21 @@ export default function AssetDetail() {
           ) : null}
         </ScrollView>
       )}
+      <PhotoViewer url={viewer} onClose={() => setViewer(null)} />
     </SafeAreaView>
+  );
+}
+
+function PhotoViewer({ url, onClose }: { url: string | null; onClose: () => void }) {
+  return (
+    <Modal visible={!!url} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(5,7,10,0.96)', alignItems: 'center', justifyContent: 'center' }}>
+        {url ? <Image source={{ uri: url }} style={{ width: '100%', height: '82%' }} resizeMode="contain" /> : null}
+        <Pressable onPress={onClose} hitSlop={10} style={{ position: 'absolute', top: 52, right: 20, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#fff', fontSize: 17, fontFamily: fonts.interSb, lineHeight: 19 }}>✕</Text>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 

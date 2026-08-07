@@ -1,19 +1,18 @@
 import { useScrollToTop } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FolderCard } from '@/components/FolderCard';
 import { folderPath } from '@/components/folderShape';
 import { Icon } from '@/components/icons/Icon';
-import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { OfflinePill } from '@/components/ui/OfflinePill';
 import { assetToCard } from '@/lib/assets/map';
 import type { Asset } from '@/lib/assets/types';
 import { useAssets } from '@/lib/assets/useAssets';
-import { fonts } from '@/theme/tokens';
+import { brand, fonts } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 export default function Assets() {
@@ -41,10 +40,7 @@ export default function Assets() {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3 }}>Equipos</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <OfflinePill />
-            <HeaderIconButton icon="plus" size={40} iconSize={22} onPress={() => router.navigate('/asset/nuevo')} />
-          </View>
+          <OfflinePill />
         </View>
         {stale ? (
           <Text style={{ fontFamily: fonts.inter, fontSize: 12.5, color: c.fg3, marginBottom: 12 }}>Mostrando lo guardado · sin conexión</Text>
@@ -77,6 +73,14 @@ export default function Assets() {
           </View>
         )}
       </ScrollView>
+
+      {/* FAB: nuevo equipo (alta manual) */}
+      <Pressable
+        onPress={() => router.navigate('/asset/nuevo')}
+        style={{ position: 'absolute', right: 20, bottom: 22, width: 56, height: 56, borderRadius: 28, backgroundColor: brand.orange, alignItems: 'center', justifyContent: 'center', shadowColor: '#0E1522', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.32, shadowRadius: 12, elevation: 6 }}
+      >
+        <Icon name="plus" size={26} color="#fff" strokeWidth={2.4} />
+      </Pressable>
     </SafeAreaView>
   );
 }
