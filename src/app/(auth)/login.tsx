@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -173,6 +174,15 @@ export default function Login() {
 
             {/* Footer */}
             <View style={styles.footer}>
+              <View style={styles.legalRow}>
+                <Text onPress={() => router.push({ pathname: '/legal', params: { tab: 'privacidad' } })} style={styles.legalLink}>
+                  Política de privacidad
+                </Text>
+                <Text style={styles.legalDot}>·</Text>
+                <Text onPress={() => router.push({ pathname: '/legal', params: { tab: 'terminos' } })} style={styles.legalLink}>
+                  Términos de uso
+                </Text>
+              </View>
               <Text style={styles.copyright}>© 2026 Zaire Technologies · Argentina</Text>
             </View>
           </ScrollView>
@@ -262,4 +272,7 @@ const styles = StyleSheet.create({
   devWrap: { marginTop: 22, opacity: 0.9 },
   footer: { alignItems: 'center', paddingTop: 18, paddingBottom: 4 },
   copyright: { fontFamily: fonts.inter, fontSize: 12, color: 'rgba(255,255,255,0.5)' },
+  legalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 8 },
+  legalLink: { fontFamily: fonts.interSb, fontSize: 12.5, color: 'rgba(255,255,255,0.82)' },
+  legalDot: { fontSize: 12.5, color: 'rgba(255,255,255,0.4)' },
 });

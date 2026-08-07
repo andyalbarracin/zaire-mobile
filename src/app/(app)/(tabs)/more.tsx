@@ -2,7 +2,7 @@ import { useScrollToTop } from '@react-navigation/native';
 import { router, type Href } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FolderSurface } from '@/components/FolderSurface';
@@ -120,6 +120,42 @@ export default function More() {
 
         {/* Cerrar sesión */}
         <PrimaryButton variant="danger" label="Cerrar sesión" iconRight="logout" onPress={() => signOut()} />
+
+        {/* Soporte */}
+        <View style={{ marginTop: 26 }}>
+          <Eyebrow color={c.fg2}>SOPORTE</Eyebrow>
+          <Pressable
+            onPress={() => router.navigate('/soporte')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.line, paddingHorizontal: 16, paddingVertical: 15 }}
+          >
+            <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: c.tile, alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="doc" size={18} color={c.fg} strokeWidth={2} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: fonts.interSb, fontSize: 14, color: c.fg }}>Cargar incidencia</Text>
+              <Text style={{ fontFamily: fonts.inter, fontSize: 12, color: c.fg3, marginTop: 1 }}>Reportá un problema con la app</Text>
+            </View>
+            <Icon name="chevronRight" size={18} color={c.fg3} strokeWidth={2.2} />
+          </Pressable>
+        </View>
+
+        {/* Links legales */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 26 }}>
+          <Text onPress={() => router.navigate({ pathname: '/legal', params: { tab: 'privacidad' } })} style={{ fontFamily: fonts.interM, fontSize: 13, color: c.fg2 }}>
+            Política de privacidad
+          </Text>
+          <Text style={{ fontFamily: fonts.inter, fontSize: 13, color: c.fg3 }}>·</Text>
+          <Text onPress={() => router.navigate({ pathname: '/legal', params: { tab: 'terminos' } })} style={{ fontFamily: fonts.interM, fontSize: 13, color: c.fg2 }}>
+            Términos y condiciones
+          </Text>
+        </View>
+
+        {/* Copyright */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 14 }}>
+          <Text style={{ fontFamily: fonts.inter, fontSize: 12, color: c.fg3 }}>© 2026</Text>
+          <Text onPress={() => Linking.openURL('https://www.zairetech.com/')} style={{ fontFamily: fonts.interSb, fontSize: 12, color: c.fg2 }}>Zaire</Text>
+          <Text style={{ fontFamily: fonts.inter, fontSize: 12, color: c.fg3 }}>· Argentina</Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

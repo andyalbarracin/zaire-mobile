@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FolderCard } from '@/components/FolderCard';
 import { folderPath } from '@/components/folderShape';
 import { Icon } from '@/components/icons/Icon';
+import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { OfflinePill } from '@/components/ui/OfflinePill';
 import { assetToCard } from '@/lib/assets/map';
 import type { Asset } from '@/lib/assets/types';
@@ -40,7 +41,10 @@ export default function Assets() {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3 }}>Equipos</Text>
-          <OfflinePill />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <OfflinePill />
+            <HeaderIconButton icon="plus" size={40} iconSize={22} onPress={() => router.navigate('/asset/nuevo')} />
+          </View>
         </View>
         {stale ? (
           <Text style={{ fontFamily: fonts.inter, fontSize: 12.5, color: c.fg3, marginBottom: 12 }}>Mostrando lo guardado · sin conexión</Text>
