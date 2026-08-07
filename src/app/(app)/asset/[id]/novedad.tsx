@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icons/Icon';
@@ -9,6 +10,7 @@ import { OfflinePill } from '@/components/ui/OfflinePill';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { assetIcon, EVENT_TYPE_LABELS } from '@/lib/assets/map';
 import { registerEvent } from '@/lib/assets/mutations';
+import { uploadAssetPhoto } from '@/lib/assets/photos';
 import type { EventType } from '@/lib/assets/types';
 import { useAsset } from '@/lib/assets/useAssets';
 import { useAuth } from '@/lib/auth';
@@ -34,7 +36,27 @@ export default function Novedad() {
   const [desc, setDesc] = useState('');
   const [cost, setCost] = useState('');
   const [downtime, setDowntime] = useState('');
+  const [photoB64, setPhotoB64] = useState<string | null>(null);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  async function pickPhoto() {
+    // Las fotos necesitan conexión por ahora (la novedad sí se puede registrar offline).
+    if (!isOnline) {
+      Alert.alert('Sin conexión', 'Las fotos necesitan conexión por ahora. Podés registrar la novedad igual.');
+      return;
+    }
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Permiso', 'Necesitamos la cámara para tomar la foto.');
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({ base64: true, quality: 0.6 });
+    const b64 = res.assets?.[0]?.base64;
+    if (res.canceled || !b64) return;
+    setPhotoB64(b64);
+    setPhotoUri(res.assets?.[0]?.uri ?? null);
+  }
 
   async function save() {
     if (saving) return;
@@ -48,6 +70,18 @@ export default function Novedad() {
         currency: 'ARS',
         downtime_hours: downtime.trim() ? Number(downtime.replace(',', '.')) : null,
       });
+      // La foto es best-effort: la novedad ya quedó registrada aunque la subida falle.
+      let photoFailed = false;
+      if (photoB64 && isOnline) {
+        try {
+          await uploadAssetPhoto(supabase, id, photoB64, `Foto · ${EVENT_TYPE_LABELS[type]}`, session?.user?.id ?? null);
+        } catch {
+          photoFailed = true;
+        }
+      }
+      if (photoFailed) {
+        Alert.alert('Novedad registrada', 'El evento quedó guardado, pero la foto no se pudo adjuntar.');
+      }
       // Volvemos a la ficha: online se ve el evento nuevo; offline queda encolado (pill de pendientes).
       router.replace({ pathname: '/asset/[id]', params: { id } });
     } catch {
@@ -127,6 +161,32 @@ export default function Novedad() {
             <NumField label="COSTO (ARS)" value={cost} onChange={setCost} placeholder="0" c={c} />
             <NumField label="HORAS DE PARADA" value={downtime} onChange={setDowntime} placeholder="0" c={c} />
           </View>
+
+          {/* Foto (opcional) */}
+          <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, marginBottom: 10, letterSpacing: 0.2 }}>FOTO (OPCIONAL)</Text>
+          {photoUri ? (
+            <View style={{ marginBottom: 24 }}>
+              <Image source={{ uri: photoUri }} style={{ width: '100%', height: 200, borderRadius: 14 }} resizeMode="cover" />
+              <Pressable
+                onPress={() => {
+                  setPhotoB64(null);
+                  setPhotoUri(null);
+                }}
+                hitSlop={8}
+                style={{ position: 'absolute', top: 10, right: 10, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(5,7,10,0.6)', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={{ color: '#fff', fontSize: 15, fontFamily: fonts.interSb, lineHeight: 17 }}>✕</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={pickPhoto}
+              style={{ height: 52, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: c.line, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, marginBottom: 24 }}
+            >
+              <Icon name="camera" size={20} color={c.fg2} strokeWidth={2} />
+              <Text style={{ fontFamily: fonts.interSb, fontSize: 14.5, color: c.fg2 }}>Tomar foto</Text>
+            </Pressable>
+          )}
 
           <PrimaryButton label="Registrar novedad" onPress={save} loading={saving} />
           <Text style={{ fontFamily: fonts.inter, fontSize: 12, lineHeight: 17, color: c.fg3, textAlign: 'center', marginTop: 12 }}>
