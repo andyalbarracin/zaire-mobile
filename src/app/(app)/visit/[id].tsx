@@ -3,17 +3,20 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useColorScheme } from 'nativewind';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DummyMap } from '@/components/field/DummyMap';
 import { VisitMap } from '@/components/field/VisitMap';
 import { FolderSurface } from '@/components/FolderSurface';
-import { Icon } from '@/components/icons/Icon';
+import { Icon, type IconName } from '@/components/icons/Icon';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { useAuth } from '@/lib/auth';
+import { useBootstrap } from '@/lib/bootstrap';
 import { writeCache } from '@/lib/cache';
 import { useConnectivity } from '@/lib/connectivity';
+import { addVisitNote, getVisitActivity, logPhotoActivity, type VisitActivityEntry } from '@/lib/field/activity';
 import { distanceMeters, formatDistance } from '@/lib/field/geo';
 import { STATUS_TO_KEY } from '@/lib/field/map';
 import { changeStatus } from '@/lib/field/mutations';
@@ -53,6 +56,8 @@ export default function VisitDetail() {
   const c = useThemeColors();
   const { colorScheme } = useColorScheme();
   const { supabase } = useTenant();
+  const { session } = useAuth();
+  const { profile } = useBootstrap();
   const { isOnline } = useConnectivity();
   const sync = useSync();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -63,6 +68,9 @@ export default function VisitDetail() {
   const [marking, setMarking] = useState(false);
   const [photos, setPhotos] = useState<VisitPhoto[]>([]);
   const [addingPhoto, setAddingPhoto] = useState(false);
+  const [activity, setActivity] = useState<VisitActivityEntry[]>([]);
+  const [noteText, setNoteText] = useState('');
+  const [sendingNote, setSendingNote] = useState(false);
 
   // Ubicación en vivo (foreground). El arribo automático con app cerrada (background) es dev build.
   useEffect(() => {
@@ -89,6 +97,10 @@ export default function VisitDetail() {
 
   useEffect(() => {
     if (id && isOnline) getPhotos(supabase, id).then(setPhotos).catch(() => {});
+  }, [id, isOnline, supabase]);
+
+  useEffect(() => {
+    if (id && isOnline) getVisitActivity(supabase, id).then(setActivity).catch(() => {});
   }, [id, isOnline, supabase]);
 
   const s = visit ? STATUS[STATUS_TO_KEY[visit.status]] : STATUS.none;
@@ -139,10 +151,30 @@ export default function VisitDetail() {
     try {
       const p = await uploadPhoto(supabase, id, b64);
       setPhotos((prev) => [p, ...prev]);
+      logPhotoActivity(supabase, id, session?.user?.id ?? null)
+        .then((entry) => { if (entry) setActivity((prev) => [...prev, entry]); })
+        .catch(() => {});
     } catch {
       Alert.alert('Error', 'No pudimos subir la foto.');
     } finally {
       setAddingPhoto(false);
+    }
+  }
+
+  async function onAddNote() {
+    const text = noteText.trim();
+    if (!text || !id) return;
+    setSendingNote(true);
+    try {
+      const entry = await addVisitNote(supabase, isOnline, id, session?.user?.id ?? null, profile?.full_name ?? null, text);
+      setActivity((prev) => [...prev, entry]);
+      setNoteText('');
+      sync.refresh();
+      if (!isOnline) Alert.alert('Guardado sin conexión', 'Se sincroniza solo cuando vuelva la señal.');
+    } catch {
+      Alert.alert('Error', 'No pudimos guardar la nota. Probá de nuevo.');
+    } finally {
+      setSendingNote(false);
     }
   }
 
@@ -175,8 +207,8 @@ export default function VisitDetail() {
           <Text onPress={() => router.back()} style={{ fontFamily: fonts.interSb, fontSize: 14, color: brand.orange, marginTop: 12 }}>Volver</Text>
         </View>
       ) : (
-        <>
-          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {/* Card empresa / sitio */}
             <FolderSurface radius={20} cut={24} fill={c.surface} border={c.line} style={{ marginBottom: 18 }} contentStyle={{ padding: 18 }}>
               <View style={{ flexDirection: 'row', gap: 13, alignItems: 'flex-start' }}>
@@ -236,6 +268,8 @@ export default function VisitDetail() {
             {/* Actividad */}
             <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, marginTop: 18, marginBottom: 13 }}>Actividad</Text>
             <Timeline visit={visit} />
+            <ActivityFeed entries={activity} c={c} />
+            <NoteComposer value={noteText} onChangeText={setNoteText} onSend={onAddNote} sending={sendingNote} c={c} />
 
             {/* Acción de la visita */}
             <View style={{ marginTop: 28 }}>
@@ -262,7 +296,7 @@ export default function VisitDetail() {
               )}
             </View>
           </ScrollView>
-        </>
+        </KeyboardAvoidingView>
       )}
     </SafeAreaView>
   );
@@ -320,6 +354,88 @@ function Timeline({ visit }: { visit: FieldVisit }) {
           </View>
         </View>
       ))}
+    </View>
+  );
+}
+
+// Set fijo por CHECK constraint en el backend (field_visit_events_event_type_check); iconos acotados al set de la app.
+const EVENT_ICON: Partial<Record<string, IconName>> = {
+  nota: 'doc',
+  foto: 'camera',
+  cambio_estado: 'check',
+  geocerca_entrada: 'pin',
+  geocerca_salida: 'pin',
+  salida: 'pin',
+  checkin: 'pin',
+  checkout: 'pin',
+};
+
+function ActivityFeed({ entries, c }: { entries: VisitActivityEntry[]; c: ReturnType<typeof useThemeColors> }) {
+  if (entries.length === 0) return null;
+  return (
+    <View style={{ marginTop: 4 }}>
+      {entries.map((e) => (
+        <View key={e.id} style={{ flexDirection: 'row', gap: 11, marginBottom: 14 }}>
+          <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: c.tile, alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+            <Icon name={EVENT_ICON[e.event_type] ?? 'doc'} size={15} color={c.fg2} strokeWidth={2} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: fonts.interM, fontSize: 13.5, color: c.fg, lineHeight: 18 }}>{e.description || e.event_type}</Text>
+            <Text style={{ fontFamily: fonts.inter, fontSize: 11.5, color: c.fg3, marginTop: 2 }}>
+              {e.author?.full_name ?? 'Alguien'} · {hm(e.occurred_at)}
+              {e.pending ? ' · pendiente de sincronizar' : ''}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function NoteComposer({
+  value,
+  onChangeText,
+  onSend,
+  sending,
+  c,
+}: {
+  value: string;
+  onChangeText: (t: string) => void;
+  onSend: () => void;
+  sending: boolean;
+  c: ReturnType<typeof useThemeColors>;
+}) {
+  const disabled = sending || value.trim().length === 0;
+  return (
+    <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', marginTop: 6 }}>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder="Agregar una nota…"
+        placeholderTextColor={c.fg3}
+        multiline
+        style={{
+          flex: 1,
+          minHeight: 44,
+          maxHeight: 100,
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: c.line,
+          backgroundColor: c.surface,
+          paddingHorizontal: 14,
+          paddingVertical: 11,
+          fontFamily: fonts.inter,
+          fontSize: 13.5,
+          color: c.fg,
+        }}
+      />
+      <Pressable
+        onPress={onSend}
+        disabled={disabled}
+        style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: brand.orange, alignItems: 'center', justifyContent: 'center', opacity: disabled ? 0.5 : 1 }}
+      >
+        {sending ? <ActivityIndicator color="#fff" size="small" /> : <Icon name="arrowRight" size={19} color="#fff" strokeWidth={2.4} />}
+      </Pressable>
     </View>
   );
 }
