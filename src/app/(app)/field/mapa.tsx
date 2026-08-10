@@ -14,6 +14,7 @@ import { regionForPoints } from '@/lib/field/geo';
 import { isToday, STATUS_TO_KEY, visitTime } from '@/lib/field/map';
 import type { FieldVisit } from '@/lib/field/types';
 import { useMyVisits } from '@/lib/field/useVisits';
+import { askPermission } from '@/lib/permissions';
 import { brand, fonts, statusColorFor } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
@@ -90,8 +91,16 @@ export default function FieldMapa() {
   const region = allPoints.length > 0 ? regionForPoints(allPoints) : undefined;
 
   async function recenter() {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== Location.PermissionStatus.GRANTED) return;
+    const granted = await askPermission(
+      {
+        title: 'Ubicación',
+        message: 'Usamos tu ubicación para centrar el mapa donde estás. ¿Activar ubicación?',
+        deniedMessage: 'Activá el permiso de ubicación para centrar el mapa donde estás.',
+      },
+      () => Location.getForegroundPermissionsAsync(),
+      () => Location.requestForegroundPermissionsAsync(),
+    );
+    if (!granted) return;
     const loc = await Location.getCurrentPositionAsync({});
     mapRef.current?.animateToRegion(
       { latitude: loc.coords.latitude, longitude: loc.coords.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 },

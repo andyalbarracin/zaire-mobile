@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
 import { resolveTechnicianId } from '@/lib/field/api';
+import { askPermission } from '@/lib/permissions';
 import { useTenant } from '@/lib/tenant';
 
 Notifications.setNotificationHandler({
@@ -21,9 +22,16 @@ Notifications.setNotificationHandler({
 /** Registra el token de push del dispositivo en `field_device_tokens` (una vez por token). */
 export async function registerForPush(sb: SupabaseClient, userId: string): Promise<void> {
   try {
-    let { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') status = (await Notifications.requestPermissionsAsync()).status;
-    if (status !== 'granted') return;
+    const granted = await askPermission(
+      {
+        title: 'Notificaciones',
+        message: 'Avisamos cuando tengas una visita nueva asignada o por vencer. ¿Activar notificaciones?',
+        deniedMessage: 'Podés activarlas más tarde desde Ajustes del sistema.',
+      },
+      () => Notifications.getPermissionsAsync(),
+      () => Notifications.requestPermissionsAsync(),
+    );
+    if (!granted) return;
 
     const projectId = (Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId;
     const token = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;

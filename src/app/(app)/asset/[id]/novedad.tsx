@@ -15,6 +15,7 @@ import type { EventType } from '@/lib/assets/types';
 import { useAsset } from '@/lib/assets/useAssets';
 import { useAuth } from '@/lib/auth';
 import { useConnectivity } from '@/lib/connectivity';
+import { askPermission } from '@/lib/permissions';
 import { useTenant } from '@/lib/tenant';
 import { tint } from '@/theme/color';
 import { brand, fonts } from '@/theme/tokens';
@@ -46,11 +47,16 @@ export default function Novedad() {
       Alert.alert('Sin conexión', 'Las fotos necesitan conexión por ahora. Podés registrar la novedad igual.');
       return;
     }
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Permiso', 'Necesitamos la cámara para tomar la foto.');
-      return;
-    }
+    const granted = await askPermission(
+      {
+        title: 'Cámara',
+        message: 'Necesitamos la cámara para adjuntar una foto a la novedad. ¿Continuar?',
+        deniedMessage: 'Activá el permiso de cámara para poder adjuntar fotos.',
+      },
+      () => ImagePicker.getCameraPermissionsAsync(),
+      () => ImagePicker.requestCameraPermissionsAsync(),
+    );
+    if (!granted) return;
     const res = await ImagePicker.launchCameraAsync({ base64: true, quality: 0.6 });
     const b64 = res.assets?.[0]?.base64;
     if (res.canceled || !b64) return;

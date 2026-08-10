@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icons/Icon';
@@ -55,6 +55,7 @@ export default function Scan() {
   }
 
   const granted = permission?.granted === true;
+  const canAskAgain = permission?.canAskAgain !== false;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#05070A' }}>
@@ -97,7 +98,12 @@ export default function Scan() {
           {error ? (
             <Text style={{ fontFamily: fonts.interM, fontSize: 13, color: '#FF8A7A', textAlign: 'center' }}>{error}</Text>
           ) : null}
-          {!granted ? <PrimaryButton label="Permitir cámara" onPress={requestPermission} /> : null}
+          {!granted ? (
+            <PrimaryButton
+              label={canAskAgain ? 'Permitir cámara' : 'Abrir Ajustes'}
+              onPress={canAskAgain ? requestPermission : () => Linking.openSettings()}
+            />
+          ) : null}
           <Pressable
             onPress={simulate}
             style={{ height: 54, borderRadius: 16, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}

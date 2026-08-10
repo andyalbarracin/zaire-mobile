@@ -20,6 +20,7 @@ import { changeStatus } from '@/lib/field/mutations';
 import { getPhotos, uploadPhoto, type VisitPhoto } from '@/lib/field/photos';
 import type { FieldVisit, VisitPurpose, VisitStatus } from '@/lib/field/types';
 import { useVisit } from '@/lib/field/useVisits';
+import { askPermission } from '@/lib/permissions';
 import { useSync } from '@/lib/sync/SyncProvider';
 import { useTenant } from '@/lib/tenant';
 import { tint } from '@/theme/color';
@@ -67,9 +68,17 @@ export default function VisitDetail() {
   useEffect(() => {
     let sub: Location.LocationSubscription | null = null;
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setPerm(status);
-      if (status !== Location.PermissionStatus.GRANTED) return;
+      const granted = await askPermission(
+        {
+          title: 'Ubicación',
+          message: 'Usamos tu ubicación para calcular la distancia al sitio y detectar cuando llegaste. ¿Activar ubicación?',
+          deniedMessage: 'Sin este permiso no podemos calcular tu distancia al sitio.',
+        },
+        () => Location.getForegroundPermissionsAsync(),
+        () => Location.requestForegroundPermissionsAsync(),
+      );
+      setPerm(granted ? Location.PermissionStatus.GRANTED : Location.PermissionStatus.DENIED);
+      if (!granted) return;
       sub = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.Balanced, distanceInterval: 10, timeInterval: 5000 },
         (loc) => setUserLoc({ lat: loc.coords.latitude, lng: loc.coords.longitude }),
@@ -109,11 +118,16 @@ export default function VisitDetail() {
   }
 
   async function onAddPhoto() {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Permiso', 'Necesitamos la cámara para tomar la foto.');
-      return;
-    }
+    const granted = await askPermission(
+      {
+        title: 'Cámara',
+        message: 'Necesitamos la cámara para adjuntar una foto a la visita. ¿Continuar?',
+        deniedMessage: 'Activá el permiso de cámara para poder adjuntar fotos.',
+      },
+      () => ImagePicker.getCameraPermissionsAsync(),
+      () => ImagePicker.requestCameraPermissionsAsync(),
+    );
+    if (!granted) return;
     if (!isOnline) {
       Alert.alert('Sin conexión', 'Las fotos necesitan conexión por ahora.');
       return;
