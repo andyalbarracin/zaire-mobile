@@ -1,5 +1,5 @@
 import { useScrollToTop } from '@react-navigation/native';
-import { router, type Href } from 'expo-router';
+import { router } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { useMemo, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
@@ -10,7 +10,6 @@ const isoWhite = require('../../../../assets/brand/lockup-white.png');
 
 import { FolderCard } from '@/components/FolderCard';
 import { FolderSurface } from '@/components/FolderSurface';
-import { Icon, type IconName } from '@/components/icons/Icon';
 import { NotificationsPanel } from '@/components/NotificationsPanel';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { OfflinePill } from '@/components/ui/OfflinePill';
@@ -25,8 +24,7 @@ import { groupByProduct } from '@/lib/stock/map';
 import { useStockLevels } from '@/lib/stock/useStock';
 import { useOrders } from '@/lib/trace/useTrace';
 import { ROLE_LABELS } from '@/lib/types';
-import { tint } from '@/theme/color';
-import { brand, fonts, moduleBrand } from '@/theme/tokens';
+import { brand, fonts } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 // Semana / puntos siguen siendo de muestra (la gamificación es una slice posterior de M1).
@@ -93,15 +91,9 @@ export default function Home() {
   const otherModules = useMemo(
     () =>
       [
-        modules.includes('assets')
-          ? { id: 'assets' as const, icon: 'box' as IconName, label: 'Salud', value: avgHealth != null ? `${avgHealth}%` : '—', route: '/assets' as Href }
-          : null,
-        modules.includes('stock')
-          ? { id: 'stock' as const, icon: 'grid' as IconName, label: 'Bajo mín.', value: `${lowStockCount}`, route: '/stock' as Href }
-          : null,
-        modules.includes('trace')
-          ? { id: 'trace' as const, icon: 'route' as IconName, label: 'Órdenes', value: `${openOrdersCount}`, route: '/trace' as Href }
-          : null,
+        modules.includes('assets') ? { id: 'assets' as const, label: 'Salud', value: avgHealth != null ? `${avgHealth}%` : '—' } : null,
+        modules.includes('stock') ? { id: 'stock' as const, label: 'Bajo mín.', value: `${lowStockCount}` } : null,
+        modules.includes('trace') ? { id: 'trace' as const, label: 'Órdenes', value: `${openOrdersCount}` } : null,
       ].filter((x): x is NonNullable<typeof x> => x !== null),
     [modules, avgHealth, lowStockCount, openOrdersCount],
   );
@@ -189,39 +181,29 @@ export default function Home() {
                 <Text style={{ fontFamily: fonts.ralewayXb, fontSize: 46, lineHeight: 46, color: c.fg, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>{done}</Text>
                 <Text style={{ fontFamily: fonts.interM, fontSize: 15, color: c.fg2, paddingBottom: 5 }}>de {total} visitas</Text>
               </View>
-              {otherModules.length > 0 ? (
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-                  {otherModules.map((m) => {
-                    const color = moduleBrand[m.id][isDark ? 'dark' : 'light'];
-                    return (
-                      <Pressable
-                        key={m.id}
-                        onPress={() => router.navigate(m.route)}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.line, paddingVertical: 7, paddingHorizontal: 9 }}
-                      >
-                        <View style={{ width: 24, height: 24, borderRadius: 7, backgroundColor: tint(color, isDark ? 0.22 : 0.14), alignItems: 'center', justifyContent: 'center' }}>
-                          <Icon name={m.icon} size={13} color={color} strokeWidth={2.2} />
-                        </View>
-                        <View>
-                          <Text style={{ fontFamily: fonts.ralewayB, fontSize: 13, color: c.fg, lineHeight: 15 }}>{m.value}</Text>
-                          <Text style={{ fontFamily: fonts.interM, fontSize: 9, color: c.fg3, lineHeight: 11 }}>{m.label}</Text>
-                        </View>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              ) : (
-                <View style={{ flexDirection: 'row', gap: 5, marginTop: 14 }}>
-                  {['#E03A3A', '#F26A21', '#E0A03A'].map((col) => (
-                    <View key={col} style={{ width: 34, height: 6, borderRadius: 3, backgroundColor: col }} />
-                  ))}
-                </View>
-              )}
             </View>
             <ProgressRing size={88} progress={pct} trackColor={c.surface2}>
               <Text style={{ fontFamily: fonts.ralewayB, fontSize: 20, color: c.fg, fontVariant: ['tabular-nums'] }}>{Math.round(pct * 100)}%</Text>
             </ProgressRing>
           </View>
+          {/* Mini-dashboard cruzado: datos planos, no clickeables, ancho completo (no comparte
+              columna con el anillo — ahí quedaba apretado y se rompía con 3 módulos). */}
+          {otherModules.length > 0 ? (
+            <View style={{ flexDirection: 'row', gap: 22, marginTop: 14 }}>
+              {otherModules.map((m) => (
+                <View key={m.id}>
+                  <Text style={{ fontFamily: fonts.ralewayB, fontSize: 15, color: c.fg, fontVariant: ['tabular-nums'] }}>{m.value}</Text>
+                  <Text style={{ fontFamily: fonts.interM, fontSize: 10.5, color: c.fg3, marginTop: 1 }}>{m.label}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', gap: 5, marginTop: 14 }}>
+              {['#E03A3A', '#F26A21', '#E0A03A'].map((col) => (
+                <View key={col} style={{ width: 34, height: 6, borderRadius: 3, backgroundColor: col }} />
+              ))}
+            </View>
+          )}
           <View style={{ height: 1, backgroundColor: c.line, marginTop: 17, marginBottom: 15 }} />
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 }}>
             <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg }}>Puntos de la semana</Text>

@@ -31,6 +31,16 @@ export function isModuleEnabled(mod: ModuleId): boolean {
   return getEnabledModules().includes(mod);
 }
 
+// Mismo orden que ZaireTabBar (Hoy → módulos habilitados en orden de prioridad → Más).
+const TAB_ORDER: string[] = ['index', ...MOBILE_MODULES, 'more'];
+const TAB_PATH: Record<string, string> = { index: '/', field: '/field', assets: '/assets', stock: '/stock', trace: '/trace', more: '/more' };
+
+/** Paths de las pantallas del navbar que están visibles hoy (según enabled_modules), en orden. Para el swipe. */
+export function getVisibleTabPaths(): string[] {
+  const enabled = getEnabledMobileModules();
+  return TAB_ORDER.filter((n) => n === 'index' || n === 'more' || enabled.includes(n as ModuleId)).map((n) => TAB_PATH[n]);
+}
+
 /** Metadatos de presentación por módulo (label + subtítulo + ícono del prototipo). */
 export const MODULE_META: Record<ModuleId, { label: string; sub: string; icon: string }> = {
   field: { label: 'Field', sub: 'Visitas', icon: 'layers' },

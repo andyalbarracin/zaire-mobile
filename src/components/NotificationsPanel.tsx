@@ -1,7 +1,7 @@
 import { router, type Href } from 'expo-router';
 import { useColorScheme } from 'nativewind';
-import { Modal, Pressable, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useRef } from 'react';
+import { Animated, Pressable, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icons/Icon';
 import { MOCK_NOTIFICATIONS, NOTIF_META } from '@/lib/notifications/mock';
@@ -10,13 +10,19 @@ import { brand, fonts, moduleBrand } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 /**
- * Preview de notificaciones (campana del header). Datos de MUESTRA (ver lib/notifications/mock) —
- * demo-able hoy, listo para enchufar un feed real más adelante sin tocar esta UI.
+ * Preview de notificaciones (campana del header) — menú que se EXPANDE hacia abajo, sin Modal
+ * (queda montado siempre; se anima opacity+translateY y se saca del camino de los toques con
+ * pointerEvents cuando está cerrado). Un `Pressable` invisible de fondo cierra al tocar afuera.
+ * Datos de MUESTRA (ver lib/notifications/mock) — demo-able hoy, listo para un feed real después.
  */
 export function NotificationsPanel({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const c = useThemeColors();
-  const insets = useSafeAreaInsets();
+  const anim = useRef(new Animated.Value(0)).current;
   const preview = MOCK_NOTIFICATIONS.slice(0, 4);
+
+  useEffect(() => {
+    Animated.timing(anim, { toValue: visible ? 1 : 0, duration: 180, useNativeDriver: true }).start();
+  }, [visible, anim]);
 
   function go(route: Href) {
     onClose();
@@ -24,39 +30,41 @@ export function NotificationsPanel({ visible, onClose }: { visible: boolean; onC
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(8,11,18,0.35)' }}>
-        <Pressable
-          onPress={(e) => e.stopPropagation()}
-          style={{
-            position: 'absolute',
-            top: insets.top + 58,
-            right: 20,
-            left: 20,
-            backgroundColor: c.surface,
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: c.line,
-            overflow: 'hidden',
-            shadowColor: '#0E1626',
-            shadowOffset: { width: 0, height: 12 },
-            shadowOpacity: 0.18,
-            shadowRadius: 24,
-            elevation: 10,
-          }}
-        >
-          <View style={{ paddingHorizontal: 16, paddingTop: 15, paddingBottom: 11, borderBottomWidth: 1, borderBottomColor: c.line }}>
-            <Text style={{ fontFamily: fonts.ralewayB, fontSize: 16, color: c.fg }}>Notificaciones</Text>
-          </View>
-          {preview.map((n, i) => (
-            <NotifRow key={n.id} title={n.title} subtitle={n.subtitle} time={n.time} icon={NOTIF_META[n.kind].icon} accent={NOTIF_META[n.kind].accent} last={i === preview.length - 1} onPress={() => go(n.route)} />
-          ))}
-          <Pressable onPress={() => go('/notificaciones')} style={{ paddingVertical: 13, alignItems: 'center' }}>
-            <Text style={{ fontFamily: fonts.interSb, fontSize: 13.5, color: brand.orange }}>Ver todas</Text>
-          </Pressable>
+    <>
+      <Pressable onPress={onClose} pointerEvents={visible ? 'auto' : 'none'} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 40 }} />
+      <Animated.View
+        pointerEvents={visible ? 'auto' : 'none'}
+        style={{
+          position: 'absolute',
+          top: 70,
+          right: 20,
+          left: 20,
+          zIndex: 50,
+          elevation: 12,
+          opacity: anim,
+          transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-14, 0] }) }],
+          backgroundColor: c.surface,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: c.line,
+          overflow: 'hidden',
+          shadowColor: '#0E1626',
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.18,
+          shadowRadius: 24,
+        }}
+      >
+        <View style={{ paddingHorizontal: 16, paddingTop: 15, paddingBottom: 11, borderBottomWidth: 1, borderBottomColor: c.line }}>
+          <Text style={{ fontFamily: fonts.ralewayB, fontSize: 16, color: c.fg }}>Notificaciones</Text>
+        </View>
+        {preview.map((n, i) => (
+          <NotifRow key={n.id} title={n.title} subtitle={n.subtitle} time={n.time} icon={NOTIF_META[n.kind].icon} accent={NOTIF_META[n.kind].accent} last={i === preview.length - 1} onPress={() => go(n.route)} />
+        ))}
+        <Pressable onPress={() => go('/notificaciones')} style={{ paddingVertical: 13, alignItems: 'center' }}>
+          <Text style={{ fontFamily: fonts.interSb, fontSize: 13.5, color: brand.orange }}>Ver todas</Text>
         </Pressable>
-      </Pressable>
-    </Modal>
+      </Animated.View>
+    </>
   );
 }
 
