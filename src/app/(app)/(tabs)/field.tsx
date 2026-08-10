@@ -32,6 +32,10 @@ export default function Field() {
 
   const isDark = colorScheme === 'dark';
   const accent = moduleBrand.field[isDark ? 'dark' : 'light'];
+  // La hero de Field es más baja que la de Home (menos contenido) — con el degradé diagonal
+  // estándar (c.hero) apenas se alcanza a ver el tono cálido del final. Acá va más intenso y
+  // adelantado (arranca más cerca del tono final) para que se note en una card más chica.
+  const heroGradient = isDark ? ['#241C15', '#3A2515', '#4A2C14'] : ['#F0E8DC', '#FAD9BC', '#F5BD87'];
   const doneToday = useMemo(() => today.filter((v) => v.status === 'finalizada').length, [today]);
   const pct = today.length > 0 ? doneToday / today.length : 0;
   const planCount = useMemo(() => today.filter((v) => v.status === 'planificada').length, [today]);
@@ -61,7 +65,7 @@ export default function Field() {
           <OfflinePill />
         </View>
 
-        <ModuleHero gradient={c.hero}>
+        <ModuleHero gradient={heroGradient}>
           <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, letterSpacing: 0.2, marginBottom: 15 }}>Tu día</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
             <View style={{ flex: 1 }}>

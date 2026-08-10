@@ -9,9 +9,12 @@ const LEVEL_SELECT = `
   warehouse:stock_warehouses(id, code, name, type)
 `;
 
+// stock_movements tiene DOS FKs a stock_warehouses (warehouse_id y counterparty_warehouse_id,
+// para transferencias) — hay que desambiguar el embed con el nombre del constraint, si no
+// PostgREST tira PGRST201 ("more than one relationship was found").
 const MOVEMENT_SELECT = `
   id, doc_number, product_id, warehouse_id, type, qty, unit_cost, notes, created_at,
-  warehouse:stock_warehouses(id, code, name, type)
+  warehouse:stock_warehouses!stock_movements_warehouse_id_fkey(id, code, name, type)
 `;
 
 // Supabase puede devolver un join to-one como objeto o como array de 1; normalizamos.
