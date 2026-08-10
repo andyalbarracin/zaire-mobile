@@ -3,14 +3,16 @@ import { AppState } from 'react-native';
 
 import { useConnectivity } from '@/lib/connectivity';
 import { flushOutbox } from '@/lib/sync/engine';
-import { countPending } from '@/lib/sync/outbox';
+import { countFailed, countPending, retryFailed as retryFailedOutbox } from '@/lib/sync/outbox';
 import { useTenant } from '@/lib/tenant';
 
 interface SyncValue {
   pending: number;
+  failed: number;
   syncing: boolean;
   refresh: () => void;
   sync: () => void;
+  retryFailed: () => void;
 }
 const Ctx = createContext<SyncValue | null>(null);
 
@@ -19,11 +21,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const { supabase } = useTenant();
   const { isOnline } = useConnectivity();
   const [pending, setPending] = useState(0);
+  const [failed, setFailed] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const busy = useRef(false);
 
   const refresh = useCallback(() => {
     countPending().then(setPending).catch(() => {});
+    countFailed().then(setFailed).catch(() => {});
   }, []);
 
   const sync = useCallback(async () => {
@@ -41,6 +45,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     }
   }, [supabase, isOnline, refresh]);
 
+  const retryFailed = useCallback(() => {
+    retryFailedOutbox()
+      .then(() => {
+        refresh();
+        sync();
+      })
+      .catch(() => {});
+  }, [refresh, sync]);
+
   useEffect(() => {
     refresh();
   }, [refresh]);
@@ -56,7 +69,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return () => s.remove();
   }, [sync]);
 
-  return <Ctx.Provider value={{ pending, syncing, refresh, sync }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ pending, failed, syncing, refresh, sync, retryFailed }}>{children}</Ctx.Provider>;
 }
 
 export function useSync(): SyncValue {

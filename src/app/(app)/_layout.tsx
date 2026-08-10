@@ -21,6 +21,7 @@ export default function AppLayout() {
       <Stack.Screen name="trace/orden/[id]" />
       <Stack.Screen name="field/mapa" />
       <Stack.Screen name="soporte" />
+      <Stack.Screen name="sync-estado" />
       <Stack.Screen name="perfil" />
       <Stack.Screen name="notificaciones" />
       <Stack.Screen name="scan" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />

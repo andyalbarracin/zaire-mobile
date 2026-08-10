@@ -25,6 +25,18 @@ export function getDb(): SQLite.SQLiteDatabase {
         created_at INTEGER NOT NULL
       );
     `);
+    // Migraciones idempotentes para bases ya creadas antes de estas columnas (SQLite no tiene
+    // "ADD COLUMN IF NOT EXISTS" — se intenta y se ignora el error si ya existe).
+    try {
+      db.execSync('ALTER TABLE sync_outbox ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0;');
+    } catch {
+      // ya existe
+    }
+    try {
+      db.execSync('ALTER TABLE sync_outbox ADD COLUMN last_error TEXT;');
+    } catch {
+      // ya existe
+    }
   }
   return db;
 }

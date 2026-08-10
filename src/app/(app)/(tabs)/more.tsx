@@ -124,7 +124,7 @@ export default function More() {
               <Switch value={lock.enabled} onValueChange={lock.setEnabled} trackColor={{ true: brand.orange, false: '#CBD0D8' }} />
             </PrefRow>
           ) : null}
-          <PrefRow icon="wifiOff" label="Ver estado sin señal" onPress={() => Alert.alert('Sin señal', 'La vista de estado offline llega en M1.')}>
+          <PrefRow icon="wifiOff" label="Ver estado sin señal" onPress={() => router.navigate('/sync-estado')}>
             <Icon name="chevronRight" size={18} color={c.fg3} strokeWidth={2.2} />
           </PrefRow>
         </View>
