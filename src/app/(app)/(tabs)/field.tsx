@@ -2,11 +2,10 @@ import { useScrollToTop } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { FieldMap } from '@/components/field/FieldMap';
 import { FolderCard } from '@/components/FolderCard';
 import { folderPath } from '@/components/folderShape';
 import { Icon } from '@/components/icons/Icon';
@@ -61,7 +60,7 @@ export default function Field() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
       <ScrollView ref={scrollRef} contentContainerStyle={{ paddingTop: 6, paddingHorizontal: 20, paddingBottom: 24 }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3 }}>Mis visitas</Text>
+          <Text style={{ fontFamily: fonts.ralewayB, fontSize: 25, color: c.fg, letterSpacing: -0.3 }}>Field</Text>
           <OfflinePill />
         </View>
 
@@ -99,6 +98,18 @@ export default function Field() {
           <SegTab label={`Todas · ${visits.length}`} active={tab === 'todas'} onPress={() => setTab('todas')} colors={c} />
         </View>
 
+        {points.length > 0 ? (
+          <Pressable
+            onPress={() => router.navigate('/field/mapa')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, height: 46, paddingHorizontal: 14, borderRadius: 13, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, marginBottom: 16 }}
+          >
+            <Icon name="pin" size={18} color={accent} strokeWidth={2} />
+            <Text style={{ flex: 1, fontFamily: fonts.interSb, fontSize: 14, color: c.fg }}>Ver mapa</Text>
+            <Text style={{ fontFamily: fonts.interM, fontSize: 12.5, color: c.fg3 }}>{points.length} en el mapa</Text>
+            <Icon name="chevronRight" size={17} color={c.fg3} strokeWidth={2.4} />
+          </Pressable>
+        ) : null}
+
         {loading ? (
           <Skeletons />
         ) : error ? (
@@ -106,14 +117,11 @@ export default function Field() {
         ) : list.length === 0 ? (
           <EmptyState today={tab === 'hoy'} />
         ) : (
-          <>
-            {points.length > 0 ? <FieldMap points={points} /> : null}
-            <View style={{ gap: 12 }}>
-              {list.map((v) => (
-                <FolderCard key={v.id} {...visitToCard(v)} onPress={() => openVisit(v)} />
-              ))}
-            </View>
-          </>
+          <View style={{ gap: 12 }}>
+            {list.map((v) => (
+              <FolderCard key={v.id} {...visitToCard(v)} onPress={() => openVisit(v)} />
+            ))}
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>

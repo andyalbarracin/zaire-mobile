@@ -1,7 +1,7 @@
 import { useScrollToTop } from '@react-navigation/native';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useColorScheme } from 'nativewind';
-import { useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,16 +10,23 @@ const isoWhite = require('../../../../assets/brand/lockup-white.png');
 
 import { FolderCard } from '@/components/FolderCard';
 import { FolderSurface } from '@/components/FolderSurface';
+import { Icon, type IconName } from '@/components/icons/Icon';
+import { NotificationsPanel } from '@/components/NotificationsPanel';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { OfflinePill } from '@/components/ui/OfflinePill';
 import { ProgressRing } from '@/components/ui/ProgressRing';
+import { useAssets } from '@/lib/assets/useAssets';
 import { useBootstrap } from '@/lib/bootstrap';
 import { useConnectivity } from '@/lib/connectivity';
 import { isToday, visitToCard } from '@/lib/field/map';
 import type { FieldVisit } from '@/lib/field/types';
 import { useMyVisits } from '@/lib/field/useVisits';
+import { groupByProduct } from '@/lib/stock/map';
+import { useStockLevels } from '@/lib/stock/useStock';
+import { useOrders } from '@/lib/trace/useTrace';
 import { ROLE_LABELS } from '@/lib/types';
-import { brand, fonts } from '@/theme/tokens';
+import { tint } from '@/theme/color';
+import { brand, fonts, moduleBrand } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 // Semana / puntos siguen siendo de muestra (la gamificación es una slice posterior de M1).
@@ -66,12 +73,38 @@ function workspaceInitial(name: string): string {
 
 export default function Home() {
   const c = useThemeColors();
-  const { profile, role, companyName } = useBootstrap();
+  const { profile, role, companyName, modules } = useBootstrap();
   const { visits } = useMyVisits();
   const { isOnline } = useConnectivity();
   const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  // Mini-dashboard cruzado (reemplaza las barras decorativas cuando hay otros módulos activos):
+  // un vistazo rápido de Assets/Stock/Trace sin agregarle altura a la card.
+  const { assets } = useAssets();
+  const { levels } = useStockLevels();
+  const { orders } = useOrders();
+  const avgHealth = assets.length > 0 ? Math.round(assets.reduce((s, a) => s + (a.health ?? 100), 0) / assets.length) : null;
+  const lowStockCount = useMemo(() => groupByProduct(levels).filter((p) => p.light !== 'green').length, [levels]);
+  const openOrdersCount = useMemo(() => orders.filter((o) => o.status !== 'facturada' && o.status !== 'cancelada').length, [orders]);
+  const otherModules = useMemo(
+    () =>
+      [
+        modules.includes('assets')
+          ? { id: 'assets' as const, icon: 'box' as IconName, label: 'Salud', value: avgHealth != null ? `${avgHealth}%` : '—', route: '/assets' as Href }
+          : null,
+        modules.includes('stock')
+          ? { id: 'stock' as const, icon: 'grid' as IconName, label: 'Bajo mín.', value: `${lowStockCount}`, route: '/stock' as Href }
+          : null,
+        modules.includes('trace')
+          ? { id: 'trace' as const, icon: 'route' as IconName, label: 'Órdenes', value: `${openOrdersCount}`, route: '/trace' as Href }
+          : null,
+      ].filter((x): x is NonNullable<typeof x> => x !== null),
+    [modules, avgHealth, lowStockCount, openOrdersCount],
+  );
 
   const name = displayName(profile);
   const greeting = `¡${greetingWord()}${name ? `, ${name}` : ''}!`;
@@ -127,7 +160,7 @@ export default function Home() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
             <OfflinePill />
             <View style={{ position: 'relative' }}>
-              <HeaderIconButton icon="bell" size={46} iconSize={23} onPress={() => {}} />
+              <HeaderIconButton icon="bell" size={46} iconSize={23} onPress={() => setNotifOpen(true)} />
               <View style={{ position: 'absolute', top: 10, right: 11, width: 9, height: 9, borderRadius: 5, backgroundColor: brand.orange, borderWidth: 2, borderColor: c.surface }} />
             </View>
           </View>
@@ -156,11 +189,34 @@ export default function Home() {
                 <Text style={{ fontFamily: fonts.ralewayXb, fontSize: 46, lineHeight: 46, color: c.fg, letterSpacing: -1, fontVariant: ['tabular-nums'] }}>{done}</Text>
                 <Text style={{ fontFamily: fonts.interM, fontSize: 15, color: c.fg2, paddingBottom: 5 }}>de {total} visitas</Text>
               </View>
-              <View style={{ flexDirection: 'row', gap: 5, marginTop: 14 }}>
-                {['#E03A3A', '#F26A21', '#E0A03A'].map((col) => (
-                  <View key={col} style={{ width: 34, height: 6, borderRadius: 3, backgroundColor: col }} />
-                ))}
-              </View>
+              {otherModules.length > 0 ? (
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
+                  {otherModules.map((m) => {
+                    const color = moduleBrand[m.id][isDark ? 'dark' : 'light'];
+                    return (
+                      <Pressable
+                        key={m.id}
+                        onPress={() => router.navigate(m.route)}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.line, paddingVertical: 7, paddingHorizontal: 9 }}
+                      >
+                        <View style={{ width: 24, height: 24, borderRadius: 7, backgroundColor: tint(color, isDark ? 0.22 : 0.14), alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon name={m.icon} size={13} color={color} strokeWidth={2.2} />
+                        </View>
+                        <View>
+                          <Text style={{ fontFamily: fonts.ralewayB, fontSize: 13, color: c.fg, lineHeight: 15 }}>{m.value}</Text>
+                          <Text style={{ fontFamily: fonts.interM, fontSize: 9, color: c.fg3, lineHeight: 11 }}>{m.label}</Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : (
+                <View style={{ flexDirection: 'row', gap: 5, marginTop: 14 }}>
+                  {['#E03A3A', '#F26A21', '#E0A03A'].map((col) => (
+                    <View key={col} style={{ width: 34, height: 6, borderRadius: 3, backgroundColor: col }} />
+                  ))}
+                </View>
+              )}
             </View>
             <ProgressRing size={88} progress={pct} trackColor={c.surface2}>
               <Text style={{ fontFamily: fonts.ralewayB, fontSize: 20, color: c.fg, fontVariant: ['tabular-nums'] }}>{Math.round(pct * 100)}%</Text>
@@ -197,6 +253,7 @@ export default function Home() {
           </View>
         )}
       </ScrollView>
+      <NotificationsPanel visible={notifOpen} onClose={() => setNotifOpen(false)} />
     </SafeAreaView>
   );
 }
