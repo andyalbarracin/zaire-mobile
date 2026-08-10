@@ -3,17 +3,23 @@ import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Dimensions, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import MapView, { Marker } from 'react-native-maps';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { FolderCard } from '@/components/FolderCard';
 import { Icon, type IconName } from '@/components/icons/Icon';
 import { regionForPoints } from '@/lib/field/geo';
-import { isToday, STATUS_TO_KEY, visitToCard } from '@/lib/field/map';
+import { isToday, STATUS_TO_KEY, visitTime } from '@/lib/field/map';
+import type { FieldVisit } from '@/lib/field/types';
 import { useMyVisits } from '@/lib/field/useVisits';
 import { brand, fonts, statusColorFor } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
+
+const SCREEN_H = Dimensions.get('window').height;
+const SHEET_COLLAPSED = 90;
+const SHEET_EXPANDED = Math.min(SCREEN_H * 0.6, 520);
 
 type RangeFilter = 'hoy' | 'semana' | 'historico';
 const RANGE_LABEL: Record<RangeFilter, string> = { hoy: 'Hoy', semana: 'Semana', historico: 'Histórico' };
@@ -133,6 +139,11 @@ export default function FieldMapa() {
         </ScrollView>
       </SafeAreaView>
 
+      {/* Backdrop invisible: cierra el panel de capas al tocar afuera (no solo re-tocando el ícono) */}
+      {layersOpen ? (
+        <Pressable onPress={() => setLayersOpen(false)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 15 }} />
+      ) : null}
+
       {/* Panel de capas — se expande, no es modal */}
       {layersOpen ? (
         <View
@@ -172,44 +183,99 @@ export default function FieldMapa() {
         </BlurView>
       </Pressable>
 
-      {/* Hoja inferior flotante: conteo + tira de visitas */}
-      {withCoords.length > 0 ? (
-        <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 }} pointerEvents="box-none">
-          <View
-            style={{
-              backgroundColor: c.surface,
-              borderTopLeftRadius: 22,
-              borderTopRightRadius: 22,
-              borderWidth: 1,
-              borderColor: c.line,
-              paddingTop: 10,
-              paddingBottom: 4,
-              shadowColor: '#0E1626',
-              shadowOffset: { width: 0, height: -6 },
-              shadowOpacity: 0.12,
-              shadowRadius: 18,
-            }}
-          >
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: c.line, alignSelf: 'center', marginBottom: 10 }} />
-            <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, paddingHorizontal: 16, marginBottom: 8 }}>
-              {searched.length} {searched.length === 1 ? 'visita' : 'visitas'}
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 16, paddingBottom: 12 }}>
-              {searched.map((v) => (
-                <Pressable key={v.id} onPress={() => openVisit(v.id)} style={{ width: 220 }}>
-                  <FolderCard {...visitToCard(v)} chevron={false} />
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        </SafeAreaView>
-      ) : null}
+      {/* Hoja inferior flotante: colapsada muestra el conteo, arrastrando hacia arriba (o
+          tocando el handle) se expande y muestra el listado vertical completo. */}
+      {withCoords.length > 0 ? <VisitsSheet visits={searched} c={c} /> : null}
     </View>
   );
 }
 
 function openVisit(id: string) {
   router.push({ pathname: '/visit/[id]', params: { id } });
+}
+
+/**
+ * Hoja inferior vertical, arrastrable (Reanimated): colapsada muestra solo el handle + conteo;
+ * arrastrando el handle hacia arriba (o tocándolo) se expande y aparece el listado. El gesto vive
+ * SOLO en el handle — la lista de abajo scrollea normal, sin competir por el gesto.
+ */
+function VisitsSheet({ visits, c }: { visits: FieldVisit[]; c: ReturnType<typeof useThemeColors> }) {
+  const height = useSharedValue(SHEET_COLLAPSED);
+  const startHeight = useSharedValue(SHEET_COLLAPSED);
+  const MID = (SHEET_COLLAPSED + SHEET_EXPANDED) / 2;
+
+  function toggle() {
+    const next = height.value > MID ? SHEET_COLLAPSED : SHEET_EXPANDED;
+    height.value = withSpring(next, { damping: 24, stiffness: 260 });
+  }
+
+  const pan = Gesture.Pan()
+    .onStart(() => {
+      startHeight.value = height.value;
+    })
+    .onUpdate((e) => {
+      const next = startHeight.value - e.translationY;
+      height.value = Math.max(SHEET_COLLAPSED, Math.min(SHEET_EXPANDED, next));
+    })
+    .onEnd((e) => {
+      const shouldExpand = height.value > MID || e.velocityY < -500;
+      height.value = withSpring(shouldExpand ? SHEET_EXPANDED : SHEET_COLLAPSED, { damping: 24, stiffness: 260 });
+    });
+
+  const sheetStyle = useAnimatedStyle(() => ({ height: height.value }));
+
+  return (
+    <SafeAreaView edges={['bottom']} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 }} pointerEvents="box-none">
+      <Animated.View
+        style={[
+          {
+            backgroundColor: c.surface,
+            borderTopLeftRadius: 22,
+            borderTopRightRadius: 22,
+            borderWidth: 1,
+            borderColor: c.line,
+            overflow: 'hidden',
+            shadowColor: '#0E1626',
+            shadowOffset: { width: 0, height: -6 },
+            shadowOpacity: 0.12,
+            shadowRadius: 18,
+          },
+          sheetStyle,
+        ]}
+      >
+        <GestureDetector gesture={pan}>
+          <Pressable onPress={toggle} style={{ paddingTop: 10, paddingBottom: 8, alignItems: 'center' }}>
+            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: c.line, marginBottom: 10 }} />
+            <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2 }}>
+              {visits.length} {visits.length === 1 ? 'visita' : 'visitas'}
+            </Text>
+          </Pressable>
+        </GestureDetector>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+          {visits.map((v, i) => (
+            <VisitRow key={v.id} v={v} last={i === visits.length - 1} c={c} />
+          ))}
+        </ScrollView>
+      </Animated.View>
+    </SafeAreaView>
+  );
+}
+
+function VisitRow({ v, last, c }: { v: FieldVisit; last: boolean; c: ReturnType<typeof useThemeColors> }) {
+  return (
+    <Pressable
+      onPress={() => openVisit(v.id)}
+      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: last ? 0 : 1, borderBottomColor: c.line }}
+    >
+      <View style={{ flex: 1, marginRight: 10 }}>
+        <Text numberOfLines={1} style={{ fontFamily: fonts.interSb, fontSize: 13.5, color: c.fg }}>{v.client?.business_name || 'Sin cliente'}</Text>
+        <Text numberOfLines={1} style={{ fontFamily: fonts.inter, fontSize: 12, color: c.fg2, marginTop: 1 }}>
+          {v.site?.name || 'Sin sitio'}{v.scheduled_at ? ` · ${visitTime(v)}` : ''}
+        </Text>
+      </View>
+      <Text style={{ fontFamily: fonts.interSb, fontSize: 12.5, color: brand.orange }}>Ver más ›</Text>
+    </Pressable>
+  );
 }
 
 function FloatCircleButton({ icon, onPress, isDark, active }: { icon: IconName; onPress: () => void; isDark: boolean; active?: boolean }) {
