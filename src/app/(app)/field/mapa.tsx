@@ -44,7 +44,7 @@ export default function FieldMapa() {
   const c = useThemeColors();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { visits, loading } = useMyVisits();
+  const { visits, loading, error } = useMyVisits();
   const mapRef = useRef<MapView>(null);
 
   const [range, setRange] = useState<RangeFilter>('semana');
@@ -113,9 +113,9 @@ export default function FieldMapa() {
       {/* Mapa full-bleed (debajo de todo, incluso del status bar) */}
       {!loading && allPoints.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
-          <Icon name="pin" size={40} color={c.fg3} strokeWidth={1.8} />
+          <Icon name={error ? 'wifiOff' : 'pin'} size={40} color={c.fg3} strokeWidth={1.8} />
           <Text style={{ fontFamily: fonts.interM, fontSize: 14.5, color: c.fg2, textAlign: 'center', marginTop: 16 }}>
-            Sin visitas con ubicación para este filtro.
+            {error ? 'No pudimos cargar las visitas.' : 'Sin visitas con ubicación para este filtro.'}
           </Text>
         </View>
       ) : (
