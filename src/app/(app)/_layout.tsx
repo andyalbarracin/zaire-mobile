@@ -18,6 +18,7 @@ export default function AppLayout() {
       <Stack.Screen name="asset/nuevo" />
       <Stack.Screen name="stock/producto/[id]" />
       <Stack.Screen name="stock/producto/[id]/movimiento" />
+      <Stack.Screen name="stock/producto/[id]/reservar" />
       <Stack.Screen name="trace/orden/[id]" />
       <Stack.Screen name="field/mapa" />
       <Stack.Screen name="soporte" />

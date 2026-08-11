@@ -72,9 +72,37 @@ export async function transferStock(sb: SupabaseClient, input: TransferStockInpu
   if (error) throw error;
 }
 
+export interface ReserveStockInput {
+  productId: string;
+  warehouseId: string;
+  qty: number; // siempre positivo
+  notes: string | null;
+  createdBy: string | null;
+}
+
+/** Reserva stock (no lo descuenta de `on_hand`, solo sube `reserved` — baja el disponible). */
+export async function reserveStock(sb: SupabaseClient, input: ReserveStockInput): Promise<void> {
+  const { error } = await sb.rpc('reserve_stock', {
+    p_product_id: input.productId,
+    p_warehouse_id: input.warehouseId,
+    p_qty: Math.abs(input.qty),
+    p_ref_type: 'manual',
+    p_ref_id: null,
+    p_notes: input.notes,
+    p_created_by: input.createdBy,
+  });
+  if (error) throw error;
+}
+
+/** Libera una reserva activa (vuelve a subir el disponible). No-op si ya no está activa. */
+export async function releaseReservation(sb: SupabaseClient, reservationId: string): Promise<void> {
+  const { error } = await sb.rpc('release_reservation', { p_reservation_id: reservationId });
+  if (error) throw error;
+}
+
 /** Traduce el error del RPC (viene tal cual del RAISE EXCEPTION de Postgres) a un mensaje claro. */
 export function mapStockError(message: string): string {
-  if (message.toLowerCase().includes('insuficiente')) return 'No hay stock suficiente para ese movimiento.';
+  if (message.toLowerCase().includes('insuficiente')) return 'No hay stock disponible suficiente.';
   if (message.toLowerCase().includes('mismo depósito') || message.toLowerCase().includes('mismo deposito')) {
     return 'El origen y el destino no pueden ser el mismo depósito.';
   }

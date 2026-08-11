@@ -57,3 +57,18 @@ export interface ProductStockSummary {
   light: 'green' | 'yellow' | 'red';
   warehouseCount: number;
 }
+
+export type ReservationStatus = 'activa' | 'consumida' | 'liberada';
+export type ReservationRefType = 'ot' | 'quote' | 'visita' | 'manual';
+
+export interface StockReservation {
+  id: string;
+  product_id: string;
+  warehouse_id: string;
+  qty: number;
+  ref_type: ReservationRefType;
+  status: ReservationStatus;
+  notes: string | null;
+  created_at: string;
+  warehouse?: Warehouse | null;
+}
