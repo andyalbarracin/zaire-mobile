@@ -9,15 +9,16 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAuth } from '@/lib/auth';
 import { useConnectivity } from '@/lib/connectivity';
 import { getWarehouses } from '@/lib/stock/api';
-import { mapStockError, registerMovement } from '@/lib/stock/mutations';
+import { mapStockError, registerMovement, transferStock } from '@/lib/stock/mutations';
 import type { Warehouse } from '@/lib/stock/types';
 import { useTenant } from '@/lib/tenant';
 import { brand, fonts } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
-const TYPES = ['entrada', 'salida'] as const;
+const TYPES = ['entrada', 'salida', 'ajuste', 'transferencia'] as const;
 type MoveType = (typeof TYPES)[number];
-const TYPE_LABEL: Record<MoveType, string> = { entrada: 'Entrada', salida: 'Salida' };
+const TYPE_LABEL: Record<MoveType, string> = { entrada: 'Entrada', salida: 'Salida', ajuste: 'Ajuste', transferencia: 'Transferencia' };
+const SAVE_LABEL: Record<MoveType, string> = { entrada: 'Registrar entrada', salida: 'Registrar salida', ajuste: 'Registrar ajuste', transferencia: 'Transferir' };
 
 export default function Movimiento() {
   const c = useThemeColors();
@@ -29,6 +30,8 @@ export default function Movimiento() {
   const [type, setType] = useState<MoveType>('entrada');
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [warehouseId, setWarehouseId] = useState<string | null>(null);
+  const [destWarehouseId, setDestWarehouseId] = useState<string | null>(null);
+  const [ajusteSign, setAjusteSign] = useState<'sumar' | 'restar'>('restar');
   const [qty, setQty] = useState('');
   const [cost, setCost] = useState('');
   const [notes, setNotes] = useState('');
@@ -47,11 +50,15 @@ export default function Movimiento() {
     if (saving) return;
     const n = Number(qty.replace(',', '.'));
     if (!warehouseId) {
-      Alert.alert('Falta el depósito', 'Elegí de dónde entra o sale el material.');
+      Alert.alert('Falta el depósito', type === 'transferencia' ? 'Elegí el depósito de origen.' : 'Elegí de dónde entra o sale el material.');
       return;
     }
     if (!n || n <= 0) {
       Alert.alert('Cantidad inválida', 'Ingresá una cantidad mayor a 0.');
+      return;
+    }
+    if (type === 'transferencia' && (!destWarehouseId || destWarehouseId === warehouseId)) {
+      Alert.alert('Falta el destino', 'Elegí un depósito de destino distinto al de origen.');
       return;
     }
     if (!isOnline) {
@@ -60,15 +67,27 @@ export default function Movimiento() {
     }
     setSaving(true);
     try {
-      await registerMovement(supabase, {
-        productId: id,
-        warehouseId,
-        type,
-        qty: n,
-        unitCost: cost.trim() ? Number(cost.replace(',', '.')) : null,
-        notes: notes.trim() || null,
-        createdBy: session?.user?.id ?? null,
-      });
+      if (type === 'transferencia') {
+        await transferStock(supabase, {
+          productId: id,
+          fromWarehouseId: warehouseId,
+          toWarehouseId: destWarehouseId!,
+          qty: n,
+          notes: notes.trim() || null,
+          createdBy: session?.user?.id ?? null,
+        });
+      } else {
+        await registerMovement(supabase, {
+          productId: id,
+          warehouseId,
+          type,
+          qty: n,
+          unitCost: cost.trim() ? Number(cost.replace(',', '.')) : null,
+          ajusteSign: type === 'ajuste' ? ajusteSign : undefined,
+          notes: notes.trim() || null,
+          createdBy: session?.user?.id ?? null,
+        });
+      }
       router.replace({ pathname: '/stock/producto/[id]', params: { id } });
     } catch (e) {
       Alert.alert('No se pudo registrar', mapStockError(e instanceof Error ? e.message : ''));
@@ -122,36 +141,56 @@ export default function Movimiento() {
             })}
           </View>
 
-          {/* Depósito */}
-          <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, marginBottom: 10, letterSpacing: 0.2 }}>DEPÓSITO</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
-            {warehouses.map((w) => {
-              const active = warehouseId === w.id;
-              return (
-                <Text
-                  key={w.id}
-                  onPress={() => setWarehouseId(w.id)}
-                  style={{
-                    fontFamily: fonts.interSb,
-                    fontSize: 13.5,
-                    color: active ? c.onPrimary : c.fg2,
-                    backgroundColor: active ? brand.orange : c.surface,
-                    borderWidth: 1,
-                    borderColor: active ? brand.orange : c.line,
-                    paddingVertical: 9,
-                    paddingHorizontal: 14,
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {w.name}
-                </Text>
-              );
-            })}
-            {warehouses.length === 0 ? (
-              <Text style={{ fontFamily: fonts.inter, fontSize: 13.5, color: c.fg3, paddingVertical: 9 }}>Cargando depósitos…</Text>
-            ) : null}
-          </View>
+          {/* Depósito(s) */}
+          <WarehouseChips
+            label={type === 'transferencia' ? 'ORIGEN' : 'DEPÓSITO'}
+            warehouses={warehouses}
+            value={warehouseId}
+            onChange={setWarehouseId}
+            c={c}
+          />
+          {type === 'transferencia' ? (
+            <WarehouseChips
+              label="DESTINO"
+              warehouses={warehouses.filter((w) => w.id !== warehouseId)}
+              value={destWarehouseId}
+              onChange={setDestWarehouseId}
+              c={c}
+            />
+          ) : null}
+
+          {/* Sentido (solo ajuste) */}
+          {type === 'ajuste' ? (
+            <>
+              <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, marginBottom: 10, letterSpacing: 0.2 }}>SENTIDO</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 22 }}>
+                {(['restar', 'sumar'] as const).map((s) => {
+                  const active = ajusteSign === s;
+                  return (
+                    <Text
+                      key={s}
+                      onPress={() => setAjusteSign(s)}
+                      style={{
+                        flex: 1,
+                        textAlign: 'center',
+                        fontFamily: fonts.interSb,
+                        fontSize: 14,
+                        color: active ? c.onPrimary : c.fg2,
+                        backgroundColor: active ? brand.orange : c.surface,
+                        borderWidth: 1,
+                        borderColor: active ? brand.orange : c.line,
+                        paddingVertical: 12,
+                        borderRadius: 13,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {s === 'restar' ? 'Restar (−)' : 'Sumar (+)'}
+                    </Text>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
 
           {/* Cantidad / costo */}
           <View style={{ flexDirection: 'row', gap: 12, marginBottom: 18 }}>
@@ -170,10 +209,60 @@ export default function Movimiento() {
             style={{ minHeight: 72, borderRadius: 14, backgroundColor: c.surface, borderWidth: 1, borderColor: c.line, padding: 14, fontFamily: fonts.inter, fontSize: 15, color: c.fg, textAlignVertical: 'top', marginBottom: 24 }}
           />
 
-          <PrimaryButton label={type === 'entrada' ? 'Registrar entrada' : 'Registrar salida'} onPress={save} loading={saving} />
+          <PrimaryButton label={SAVE_LABEL[type]} onPress={save} loading={saving} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+function WarehouseChips({
+  label,
+  warehouses,
+  value,
+  onChange,
+  c,
+}: {
+  label: string;
+  warehouses: Warehouse[];
+  value: string | null;
+  onChange: (id: string) => void;
+  c: ReturnType<typeof useThemeColors>;
+}) {
+  return (
+    <>
+      <Text style={{ fontFamily: fonts.interSb, fontSize: 13, color: c.fg2, marginBottom: 10, letterSpacing: 0.2 }}>{label}</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
+        {warehouses.map((w) => {
+          const active = value === w.id;
+          return (
+            <Text
+              key={w.id}
+              onPress={() => onChange(w.id)}
+              style={{
+                fontFamily: fonts.interSb,
+                fontSize: 13.5,
+                color: active ? c.onPrimary : c.fg2,
+                backgroundColor: active ? brand.orange : c.surface,
+                borderWidth: 1,
+                borderColor: active ? brand.orange : c.line,
+                paddingVertical: 9,
+                paddingHorizontal: 14,
+                borderRadius: 12,
+                overflow: 'hidden',
+              }}
+            >
+              {w.name}
+            </Text>
+          );
+        })}
+        {warehouses.length === 0 ? (
+          <Text style={{ fontFamily: fonts.inter, fontSize: 13.5, color: c.fg3, paddingVertical: 9 }}>
+            {label === 'DESTINO' ? 'Elegí otro depósito de origen primero.' : 'Cargando depósitos…'}
+          </Text>
+        ) : null}
+      </View>
+    </>
   );
 }
 
