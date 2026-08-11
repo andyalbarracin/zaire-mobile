@@ -1,16 +1,23 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useColorScheme } from 'nativewind';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/icons/Icon';
 import { HeaderIconButton } from '@/components/ui/HeaderIconButton';
 import { OfflinePill } from '@/components/ui/OfflinePill';
-import { fmtShortDate, ORDER_STATUS_LABELS, ORDER_STATUS_TO_KEY } from '@/lib/trace/map';
-import type { ItemStatus, StatusHistoryEntry, WorkOrderItem } from '@/lib/trace/types';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { useAuth } from '@/lib/auth';
+import { useBootstrap } from '@/lib/bootstrap';
+import { useConnectivity } from '@/lib/connectivity';
+import { useTenant } from '@/lib/tenant';
+import { fmtShortDate, ORDER_STATUS_LABELS, ORDER_STATUS_TO_KEY, STATUS_TRANSITIONS } from '@/lib/trace/map';
+import { changeOrderStatus } from '@/lib/trace/mutations';
+import type { ItemStatus, OrderStatus, StatusHistoryEntry, WorkOrderItem } from '@/lib/trace/types';
 import { useOrder } from '@/lib/trace/useTrace';
 import { tint } from '@/theme/color';
-import { fonts, statusColorFor } from '@/theme/tokens';
+import { brand, fonts, statusColorFor } from '@/theme/tokens';
 import { useThemeColors } from '@/theme/useThemeColors';
 
 const ITEM_STATUS_LABELS: Record<ItemStatus, string> = {
@@ -35,12 +42,58 @@ export default function OrdenDetail() {
   const c = useThemeColors();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { supabase } = useTenant();
+  const { session } = useAuth();
+  const { profile } = useBootstrap();
+  const { isOnline } = useConnectivity();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, loading, error, stale, refetch } = useOrder(id);
   const order = data?.order ?? null;
   const items = data?.items ?? [];
   const history = data?.history ?? [];
   const sColor = order ? statusColorFor(ORDER_STATUS_TO_KEY[order.status], isDark) : '#8B93A3';
+
+  const [newStatus, setNewStatus] = useState<OrderStatus | null>(null);
+  const [statusNotes, setStatusNotes] = useState('');
+  const [changingStatus, setChangingStatus] = useState(false);
+  const allowedNext = order ? STATUS_TRANSITIONS[order.status] : [];
+
+  function confirmChangeStatus() {
+    if (!order || !newStatus) return;
+    if (!isOnline) {
+      Alert.alert('Sin conexión', 'Cambiar el estado necesita conexión.');
+      return;
+    }
+    Alert.alert('Cambiar estado', `¿Pasar de "${ORDER_STATUS_LABELS[order.status]}" a "${ORDER_STATUS_LABELS[newStatus]}"?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Confirmar', onPress: doChangeStatus },
+    ]);
+  }
+
+  async function doChangeStatus() {
+    if (!order || !newStatus) return;
+    setChangingStatus(true);
+    try {
+      const result = await changeOrderStatus(supabase, {
+        orderId: order.id,
+        oldStatus: order.status,
+        newStatus,
+        notes: statusNotes.trim() || null,
+        userId: session?.user?.id ?? null,
+        userName: profile?.full_name ?? null,
+      });
+      setNewStatus(null);
+      setStatusNotes('');
+      refetch();
+      if (result.partial) {
+        Alert.alert('Estado actualizado, con avisos', 'El estado cambió, pero no pudimos guardar el historial o la auditoría del cambio.');
+      }
+    } catch {
+      Alert.alert('Error', 'No pudimos cambiar el estado. Probá de nuevo.');
+    } finally {
+      setChangingStatus(false);
+    }
+  }
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
@@ -99,6 +152,63 @@ export default function OrdenDetail() {
               <Text style={{ fontFamily: fonts.inter, fontSize: 13.5, color: c.fg3, paddingVertical: 4 }}>Sin ítems cargados.</Text>
             )}
           </Section>
+
+          {/* Cambiar estado */}
+          {allowedNext.length > 0 ? (
+            <View style={{ marginBottom: 22 }}>
+              <Text style={{ fontFamily: fonts.ralewayB, fontSize: 16, color: c.fg, marginBottom: 10 }}>Cambiar estado</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+                {allowedNext.map((s) => {
+                  const active = newStatus === s;
+                  return (
+                    <Text
+                      key={s}
+                      onPress={() => setNewStatus(s)}
+                      style={{
+                        fontFamily: fonts.interSb,
+                        fontSize: 13.5,
+                        color: active ? c.onPrimary : c.fg2,
+                        backgroundColor: active ? brand.orange : c.surface,
+                        borderWidth: 1,
+                        borderColor: active ? brand.orange : c.line,
+                        paddingVertical: 9,
+                        paddingHorizontal: 14,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {ORDER_STATUS_LABELS[s]}
+                    </Text>
+                  );
+                })}
+              </View>
+              {newStatus ? (
+                <>
+                  <TextInput
+                    value={statusNotes}
+                    onChangeText={setStatusNotes}
+                    placeholder="Notas del cambio (opcional)…"
+                    placeholderTextColor={c.fg3}
+                    multiline
+                    style={{
+                      minHeight: 60,
+                      borderRadius: 14,
+                      backgroundColor: c.surface,
+                      borderWidth: 1,
+                      borderColor: c.line,
+                      padding: 14,
+                      fontFamily: fonts.inter,
+                      fontSize: 14,
+                      color: c.fg,
+                      textAlignVertical: 'top',
+                      marginBottom: 14,
+                    }}
+                  />
+                  <PrimaryButton label={`Cambiar a "${ORDER_STATUS_LABELS[newStatus]}"`} onPress={confirmChangeStatus} loading={changingStatus} />
+                </>
+              ) : null}
+            </View>
+          ) : null}
 
           {/* Historial */}
           <View style={{ marginBottom: 8 }}>
