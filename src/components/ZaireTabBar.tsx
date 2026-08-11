@@ -68,7 +68,14 @@ export function ZaireTabBar({ state, navigation }: ZaireTabBarProps) {
   const labelSize = compact ? 9.5 : 10;
 
   const renderBtn = (it: TabItem) => (
-    <Pressable key={it.route.key} onPress={() => go(it.route)} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+    <Pressable
+      key={it.route.key}
+      onPress={() => go(it.route)}
+      accessibilityRole="tab"
+      accessibilityLabel={it.label}
+      accessibilityState={{ selected: it.focused }}
+      style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 }}
+    >
       <Icon name={it.icon} size={iconSize} color={it.focused ? brand.orange : c.fg3} strokeWidth={it.focused ? 2.3 : 2} />
       <Text numberOfLines={1} style={{ fontFamily: fonts.interSb, fontSize: labelSize, letterSpacing: 0.2, color: it.focused ? brand.orange : c.fg3 }}>
         {it.label}

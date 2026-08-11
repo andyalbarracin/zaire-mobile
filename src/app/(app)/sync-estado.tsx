@@ -23,8 +23,6 @@ const OP_LABELS: Record<string, string> = {
   set_status: 'Cambio de estado',
   insert: 'Registro nuevo',
 };
-const PENDING_COLOR = '#B87A1E';
-const FAILED_COLOR = '#C43333';
 
 export default function SyncEstado() {
   const c = useThemeColors();
@@ -69,18 +67,20 @@ export default function SyncEstado() {
             {failedCount > 0 ? (
               <Pressable
                 onPress={handleRetry}
+                accessibilityRole="button"
+                accessibilityLabel={`Reintentar ${failedCount} fallido${failedCount > 1 ? 's' : ''}`}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
-                  backgroundColor: tint(FAILED_COLOR, 0.12),
+                  backgroundColor: tint(c.danger, 0.12),
                   borderRadius: 14,
                   paddingVertical: 13,
                   marginBottom: 16,
                 }}
               >
-                <Text style={{ fontFamily: fonts.interSb, fontSize: 13.5, color: FAILED_COLOR }}>
+                <Text style={{ fontFamily: fonts.interSb, fontSize: 13.5, color: c.danger }}>
                   Reintentar {failedCount} fallido{failedCount > 1 ? 's' : ''}
                 </Text>
               </Pressable>
@@ -99,10 +99,12 @@ export default function SyncEstado() {
 
 function ItemRow({ item, last, c }: { item: OutboxItem; last: boolean; c: ReturnType<typeof useThemeColors> }) {
   const failed = item.status === 'failed';
-  const color = failed ? FAILED_COLOR : PENDING_COLOR;
+  const color = failed ? c.danger : c.warn;
   const icon = ENTITY_ICONS[item.entity] ?? 'doc';
+  const label = `${ENTITY_LABELS[item.entity] ?? item.entity}, ${OP_LABELS[item.op] ?? item.op}, ${failed ? `falló: ${item.last_error ?? 'error desconocido'}` : `pendiente, ${relTime(item.created_at)}`}`;
   return (
     <View
+      accessibilityLabel={label}
       style={{
         flexDirection: 'row',
         gap: 12,

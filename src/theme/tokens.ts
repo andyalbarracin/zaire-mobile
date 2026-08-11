@@ -13,7 +13,7 @@ export const light = {
   surface2: '#EFEAE0',
   fg: '#16223A',
   fg2: '#5A6474',
-  fg3: '#8B93A3',
+  fg3: '#666E80', // antes #8B93A3 (2.74:1 sobre bg, no llegaba al mínimo AA de 4.5:1 para texto)
   nav: '#FFFFFF',
   line: 'rgba(22,34,58,0.10)',
   navLine: 'rgba(22,34,58,0.08)',
@@ -21,6 +21,8 @@ export const light = {
   primary: '#E85D16', // acción principal (más profundo en claro → mejor contraste sobre crema)
   primaryPressed: '#C64F12',
   onPrimary: '#FFFFFF',
+  warn: '#956318', // texto "pendiente" (antes #B87A1E fijo, 3.19:1 en claro)
+  danger: '#C43333', // texto "fallido" / peligro
   bgGrad: ['#EAE8E1', '#F5F1EA'],
   hero: ['#E7E9EC', '#F4EFEA', '#FBE0CE'],
 };
@@ -39,6 +41,8 @@ export const dark: typeof light = {
   primary: '#F26A21',
   primaryPressed: '#D85C17',
   onPrimary: '#0E1626',
+  warn: '#B87A1E', // en oscuro este tono ya pasa AA cómodo (5.4:1) — no hace falta cambiarlo
+  danger: '#D45B5B', // más claro que en light: #C43333 baja de 4.5:1 sobre fondos oscuros
   bgGrad: ['#070809', '#0F1317'],
   hero: ['#1B2024', '#191D20', '#2C1C11'],
 };

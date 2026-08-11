@@ -136,9 +136,16 @@ export default function FieldMapa() {
       {/* Overlay superior: volver + buscador + capas, flota sobre el mapa */}
       <SafeAreaView edges={['top']} style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }} pointerEvents="box-none">
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 6 }}>
-          <FloatCircleButton icon="chevronLeft" onPress={() => router.back()} isDark={isDark} />
+          <FloatCircleButton icon="chevronLeft" onPress={() => router.back()} isDark={isDark} accessibilityLabel="Volver" />
           <FloatSearchBox value={query} onChange={setQuery} isDark={isDark} />
-          <FloatCircleButton icon="grid" onPress={() => setLayersOpen((v) => !v)} isDark={isDark} active={layersOpen} />
+          <FloatCircleButton
+            icon="grid"
+            onPress={() => setLayersOpen((v) => !v)}
+            isDark={isDark}
+            active={layersOpen}
+            accessibilityLabel="Capas del mapa"
+            accessibilityState={{ expanded: layersOpen }}
+          />
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingTop: 10 }}>
@@ -185,6 +192,8 @@ export default function FieldMapa() {
       {/* Recentrar en mi ubicación */}
       <Pressable
         onPress={recenter}
+        accessibilityRole="button"
+        accessibilityLabel="Centrar en mi ubicación"
         style={{ position: 'absolute', bottom: withCoords.length > 0 ? 168 : 32, left: 16, zIndex: 10, width: 44, height: 44, borderRadius: 22, overflow: 'hidden' }}
       >
         <BlurView intensity={80} tint={isDark ? 'dark' : 'light'} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -287,9 +296,29 @@ function VisitRow({ v, last, c }: { v: FieldVisit; last: boolean; c: ReturnType<
   );
 }
 
-function FloatCircleButton({ icon, onPress, isDark, active }: { icon: IconName; onPress: () => void; isDark: boolean; active?: boolean }) {
+function FloatCircleButton({
+  icon,
+  onPress,
+  isDark,
+  active,
+  accessibilityLabel,
+  accessibilityState,
+}: {
+  icon: IconName;
+  onPress: () => void;
+  isDark: boolean;
+  active?: boolean;
+  accessibilityLabel: string;
+  accessibilityState?: { expanded?: boolean };
+}) {
   return (
-    <Pressable onPress={onPress} style={{ width: 44, height: 44, borderRadius: 22, overflow: 'hidden' }}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={accessibilityState}
+      style={{ width: 44, height: 44, borderRadius: 22, overflow: 'hidden' }}
+    >
       <BlurView
         intensity={80}
         tint={isDark ? 'dark' : 'light'}
@@ -352,7 +381,13 @@ function FloatPill({ label, active, onPress, isDark }: { label: string; active: 
 
 function LayerRow({ label, checked, onPress, color, c }: { label: string; checked: boolean; onPress: () => void; color: string; c: ReturnType<typeof useThemeColors> }) {
   return (
-    <Pressable onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9, paddingHorizontal: 14 }}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="checkbox"
+      accessibilityLabel={label}
+      accessibilityState={{ checked }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 9, paddingHorizontal: 14 }}
+    >
       <View
         style={{
           width: 19,
