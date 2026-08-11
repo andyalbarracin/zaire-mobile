@@ -57,7 +57,7 @@ export default function VisitDetail() {
   const { colorScheme } = useColorScheme();
   const { supabase } = useTenant();
   const { session } = useAuth();
-  const { profile } = useBootstrap();
+  const { profile, modules } = useBootstrap();
   const { isOnline } = useConnectivity();
   const sync = useSync();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -270,6 +270,20 @@ export default function VisitDetail() {
             <Timeline visit={visit} />
             <ActivityFeed entries={activity} c={c} />
             <NoteComposer value={noteText} onChangeText={setNoteText} onSend={onAddNote} sending={sendingNote} c={c} />
+
+            {/* Consumir de stock (cross-módulo, solo si el cliente tiene Stock habilitado) */}
+            {modules.includes('stock') ? (
+              <View style={{ marginTop: 22 }}>
+                <PrimaryButton
+                  label="Consumir de stock"
+                  variant="outline"
+                  iconRight="box"
+                  onPress={() =>
+                    router.push({ pathname: '/visit/[id]/consumo', params: { id: id!, vehicleId: visit.vehicle_id ?? '' } })
+                  }
+                />
+              </View>
+            ) : null}
 
             {/* Acción de la visita */}
             <View style={{ marginTop: 28 }}>

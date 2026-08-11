@@ -98,7 +98,7 @@ export async function getProductStock(sb: SupabaseClient, productId: string): Pr
 export async function getWarehouses(sb: SupabaseClient): Promise<Warehouse[]> {
   const { data, error } = await sb
     .from('stock_warehouses')
-    .select('id, code, name, type')
+    .select('id, code, name, type, field_vehicle_id')
     .eq('is_active', true)
     .is('deleted_at', null)
     .order('name');

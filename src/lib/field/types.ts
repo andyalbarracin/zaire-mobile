@@ -33,6 +33,7 @@ export interface FieldVisit {
   visit_number: string | null;
   status: VisitStatus;
   purpose: VisitPurpose | null;
+  vehicle_id: string | null;
   scheduled_at: string | null;
   started_at: string | null;
   arrived_at: string | null;

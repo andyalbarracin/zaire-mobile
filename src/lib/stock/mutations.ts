@@ -100,6 +100,30 @@ export async function releaseReservation(sb: SupabaseClient, reservationId: stri
   if (error) throw error;
 }
 
+export interface ConsumeStockInput {
+  productId: string;
+  warehouseId: string;
+  qty: number; // siempre positivo
+  visitId: string;
+  notes: string | null;
+  createdBy: string | null;
+}
+
+/** Consume stock vinculado a una visita (RPC `consume_stock`, movimiento tipo 'consumo', ref_type 'visita'). */
+export async function consumeStock(sb: SupabaseClient, input: ConsumeStockInput): Promise<void> {
+  const { error } = await sb.rpc('consume_stock', {
+    p_product_id: input.productId,
+    p_warehouse_id: input.warehouseId,
+    p_qty: Math.abs(input.qty),
+    p_ref_type: 'visita',
+    p_ref_id: input.visitId,
+    p_notes: input.notes,
+    p_created_by: input.createdBy,
+    p_reservation_id: null,
+  });
+  if (error) throw error;
+}
+
 /** Traduce el error del RPC (viene tal cual del RAISE EXCEPTION de Postgres) a un mensaje claro. */
 export function mapStockError(message: string): string {
   if (message.toLowerCase().includes('insuficiente')) return 'No hay stock disponible suficiente.';

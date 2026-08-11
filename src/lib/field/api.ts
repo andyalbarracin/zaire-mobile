@@ -4,7 +4,7 @@ import type { FieldVisit } from './types';
 
 // Espejo (curado) del VISIT_SELECT de la webapp: solo lo que necesita lista + detalle.
 const VISIT_SELECT = `
-  id, visit_number, status, purpose, scheduled_at, started_at, arrived_at, departed_at, ended_at, planned_notes,
+  id, visit_number, status, purpose, vehicle_id, scheduled_at, started_at, arrived_at, departed_at, ended_at, planned_notes,
   client:clients(id, business_name),
   site:field_sites(id, name, city, province, latitude, longitude, geofence_radius_m)
 `;

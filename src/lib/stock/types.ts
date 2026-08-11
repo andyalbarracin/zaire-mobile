@@ -19,6 +19,7 @@ export interface Warehouse {
   code: string | null;
   name: string;
   type: WarehouseType;
+  field_vehicle_id: string | null;
 }
 
 export interface StockLevel {
